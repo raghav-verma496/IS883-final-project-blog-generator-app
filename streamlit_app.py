@@ -8,15 +8,19 @@ my_secret_key = st.secrets['IS883-OpenAIKey-RV']
 
 # Function to get response from GPT-4
 def getGPT4response(input_text, no_words, blog_style):
-    # Initialize the OpenAI GPT-4 model with API key
-    chat = ChatOpenAI(model="gpt-4", temperature=0.7, openai_api_key=my_secret_key)
+    try:
+        # Initialize the OpenAI GPT-4 model with API key
+        chat = ChatOpenAI(model="gpt-4", temperature=0.7, openai_api_key=my_secret_key)
 
-    # Manually construct the prompt as a single string
-    formatted_prompt = f"Write a blog for a {blog_style} job profile on the topic '{input_text}'. Limit the content to approximately {no_words} words."
+        # Construct the prompt as a single string
+        prompt = f"Write a blog for a {blog_style} job profile on the topic '{input_text}'. Limit the content to approximately {no_words} words."
 
-    # Generate response from GPT-4 by directly passing the prompt
-    response = chat(formatted_prompt)  # Pass formatted_prompt directly
-    return response.content
+        # Generate response from GPT-4 by passing the prompt as a single string
+        response = chat(prompt)
+        return response.content
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
+        return None
 
 # Streamlit UI configuration
 st.set_page_config(
@@ -45,4 +49,5 @@ submit = st.button("Generate")
 # Display the generated blog content
 if submit:
     blog_content = getGPT4response(input_text, no_words, blog_style)
-    st.write(blog_content)
+    if blog_content:
+        st.write(blog_content)
