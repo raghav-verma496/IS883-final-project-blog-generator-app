@@ -23,8 +23,11 @@ def getGPT4response(input_text, no_words, blog_style):
         template=template
     )
 
+    # Generate the prompt as a formatted object
+    formatted_prompt = prompt.format_prompt(blog_style=blog_style, input_text=input_text, no_words=no_words)
+    
     # Generate response from GPT-4
-    response = chat(prompt.format(blog_style=blog_style, input_text=input_text, no_words=no_words))
+    response = chat(formatted_prompt.to_string())
     return response.content
 
 # Streamlit UI configuration
