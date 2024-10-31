@@ -11,11 +11,11 @@ def getGPT4response(input_text, no_words, blog_style):
     # Initialize the OpenAI GPT-4 model with API key
     chat = ChatOpenAI(model="gpt-4", temperature=0.7, openai_api_key=my_secret_key)
 
-    # Manually construct the prompt
+    # Manually construct the prompt as a single string
     formatted_prompt = f"Write a blog for a {blog_style} job profile on the topic '{input_text}'. Limit the content to approximately {no_words} words."
 
-    # Generate response from GPT-4 using `messages`
-    response = chat(messages=[{"role": "user", "content": formatted_prompt}])
+    # Generate response from GPT-4 by directly passing the prompt
+    response = chat(formatted_prompt)  # Pass formatted_prompt directly
     return response.content
 
 # Streamlit UI configuration
