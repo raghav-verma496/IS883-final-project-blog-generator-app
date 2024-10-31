@@ -1,17 +1,16 @@
 import streamlit as st
 from langchain.prompts import PromptTemplate
-from langchain.chat_models import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
 import openai
 import os
 
-### Load your API Key
+# Load your API Key
 my_secret_key = st.secrets['IS883-OpenAIKey-RV']
-openai.api_key = my_secret_key
 
 # Function to get response from GPT-4
 def getGPT4response(input_text, no_words, blog_style):
-    # Initialize the OpenAI GPT-4 model
-    chat = ChatOpenAI(model="gpt-4", temperature=0.7)
+    # Initialize the OpenAI GPT-4 model with API key
+    chat = ChatOpenAI(model="gpt-4", temperature=0.7, openai_api_key=my_secret_key)
 
     # Prompt template for GPT-4
     template = """
