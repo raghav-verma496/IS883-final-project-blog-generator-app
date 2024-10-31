@@ -2,23 +2,23 @@ import streamlit as st
 import openai
 
 # Load your API Key
-my_secret_key = st.secrets['IS883-OpenAIKey-RV']
+my_secret_key = st.secrets["IS883-OpenAIKey-RV"]
 openai.api_key = my_secret_key
 
-# Function to get response from GPT-4
-def getGPT4response(input_text, no_words, blog_style):
+# Function to get response from GPT-4o Mini
+def get_gpt4o_mini_response(input_text, no_words, blog_style):
     try:
-        # Construct the prompt directly
+        # Construct the prompt
         prompt = f"Write a blog for a {blog_style} job profile on the topic '{input_text}'. Limit the content to approximately {no_words} words."
         
-        # Make a direct API call to OpenAI's GPT-4 model
+        # Make a call to OpenAI's GPT-4o Mini model
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}]
         )
 
         # Extract and return the response content
-        return response.choices[0].message['content']
+        return response.choices[0].message["content"]
     except Exception as e:
         st.error(f"An error occurred: {e}")
         return None
@@ -35,8 +35,6 @@ st.header("Generate Blogs 🤖")
 
 # User inputs
 input_text = st.text_input("Enter the Blog Topic")
-
-# Two columns for additional fields
 col1, col2 = st.columns([5, 5])
 
 with col1:
@@ -49,6 +47,6 @@ submit = st.button("Generate")
 
 # Display the generated blog content
 if submit:
-    blog_content = getGPT4response(input_text, no_words, blog_style)
+    blog_content = get_gpt4o_mini_response(input_text, no_words, blog_style)
     if blog_content:
         st.write(blog_content)
