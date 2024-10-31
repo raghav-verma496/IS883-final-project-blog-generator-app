@@ -1,23 +1,24 @@
 import streamlit as st
-from langchain_community.chat_models import ChatOpenAI
 import openai
-import os
 
 # Load your API Key
 my_secret_key = st.secrets['IS883-OpenAIKey-RV']
+openai.api_key = my_secret_key
 
 # Function to get response from GPT-4
 def getGPT4response(input_text, no_words, blog_style):
     try:
-        # Initialize the OpenAI GPT-4 model with API key
-        chat = ChatOpenAI(model="gpt-4", temperature=0.7, openai_api_key=my_secret_key)
-
-        # Construct the prompt as a single string
+        # Construct the prompt directly
         prompt = f"Write a blog for a {blog_style} job profile on the topic '{input_text}'. Limit the content to approximately {no_words} words."
+        
+        # Make a direct API call to OpenAI's GPT-4 model
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}]
+        )
 
-        # Generate response from GPT-4 by passing the prompt as a single string
-        response = chat(prompt)
-        return response.content
+        # Extract and return the response content
+        return response.choices[0].message['content']
     except Exception as e:
         st.error(f"An error occurred: {e}")
         return None
