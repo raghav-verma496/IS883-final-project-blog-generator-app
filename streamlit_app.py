@@ -1,5 +1,4 @@
 import streamlit as st
-from langchain.prompts import PromptTemplate
 from langchain_community.chat_models import ChatOpenAI
 import openai
 import os
@@ -12,22 +11,11 @@ def getGPT4response(input_text, no_words, blog_style):
     # Initialize the OpenAI GPT-4 model with API key
     chat = ChatOpenAI(model="gpt-4", temperature=0.7, openai_api_key=my_secret_key)
 
-    # Prompt template for GPT-4
-    template = """
-        Write a blog for a {blog_style} job profile on the topic '{input_text}'.
-        Limit the content to approximately {no_words} words.
-    """
-    
-    prompt = PromptTemplate(
-        input_variables=["blog_style", "input_text", "no_words"],
-        template=template
-    )
+    # Manually construct the prompt
+    formatted_prompt = f"Write a blog for a {blog_style} job profile on the topic '{input_text}'. Limit the content to approximately {no_words} words."
 
-    # Generate the prompt as a simple string
-    formatted_prompt = prompt.format(blog_style=blog_style, input_text=input_text, no_words=no_words)
-    
-    # Generate response from GPT-4
-    response = chat(formatted_prompt)  # Use formatted_prompt directly as a string
+    # Generate response from GPT-4 using `messages`
+    response = chat(messages=[{"role": "user", "content": formatted_prompt}])
     return response.content
 
 # Streamlit UI configuration
