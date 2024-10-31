@@ -1,58 +1,52 @@
 import streamlit as st
 from langchain.prompts import PromptTemplate
-from langchain.llms import CTransformers
+from langchain.chat_models import ChatOpenAI
 
-## Function To get response from LLAma 2 model
+# Function to get response from GPT-4
+def getGPT4response(input_text, no_words, blog_style):
+    # Initialize the OpenAI GPT-4 model
+    chat = ChatOpenAI(model="gpt-4", temperature=0.7)
 
-def getLLamaresponse(input_text,no_words,blog_style):
-
-    ### LLama2 model
-    llm=CTransformers(model='llama-2-7b-chat.ggmlv3.q8_0.bin',
-                      model_type='llama',
-                      config={'max_new_tokens':256,
-                              'temperature':0.01})
+    # Prompt template for GPT-4
+    template = """
+        Write a blog for a {blog_style} job profile on the topic '{input_text}'.
+        Limit the content to approximately {no_words} words.
+    """
     
-    ## Prompt Template
+    prompt = PromptTemplate(
+        input_variables=["blog_style", "input_text", "no_words"],
+        template=template
+    )
 
-    template="""
-        Write a blog for {blog_style} job profile for a topic {input_text}
-        within {no_words} words.
-            """
-    
-    prompt=PromptTemplate(input_variables=["blog_style","input_text",'no_words'],
-                          template=template)
-    
-    ## Generate the ressponse from the LLama 2 model
-    response=llm(prompt.format(blog_style=blog_style,input_text=input_text,no_words=no_words))
-    print(response)
-    return response
+    # Generate response from GPT-4
+    response = chat(prompt.format(blog_style=blog_style, input_text=input_text, no_words=no_words))
+    return response.content
 
-
-
-
-
-
-st.set_page_config(page_title="Generate Blogs",
-                    page_icon='🤖',
-                    layout='centered',
-                    initial_sidebar_state='collapsed')
+# Streamlit UI configuration
+st.set_page_config(
+    page_title="Generate Blogs",
+    page_icon="🤖",
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
 
 st.header("Generate Blogs 🤖")
 
-input_text=st.text_input("Enter the Blog Topic")
+# User inputs
+input_text = st.text_input("Enter the Blog Topic")
 
-## creating to more columns for additonal 2 fields
-
-col1,col2=st.columns([5,5])
+# Two columns for additional fields
+col1, col2 = st.columns([5, 5])
 
 with col1:
-    no_words=st.text_input('No of Words')
+    no_words = st.text_input("No of Words")
 with col2:
-    blog_style=st.selectbox('Writing the blog for',
-                            ('Researchers','Data Scientist','Common People'),index=0)
-    
-submit=st.button("Generate")
+    blog_style = st.selectbox("Writing the blog for", ("Researchers", "Data Scientist", "Common People"), index=0)
 
-## Final response
+# Generate blog button
+submit = st.button("Generate")
+
+# Display the generated blog content
 if submit:
-    st.write(getLLamaresponse(input_text,no_words,blog_style))
+    blog_content = getGPT4response(input_text, no_words, blog_style)
+    st.write(blog_content)
