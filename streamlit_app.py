@@ -1,6 +1,8 @@
 import streamlit as st
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
+import openai
+import os
 
 ### Load your API Key
 my_secret_key = st.secrets['IS883-OpenAIKey-RV']
