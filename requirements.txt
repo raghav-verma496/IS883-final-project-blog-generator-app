@@ -5,3 +5,4 @@ langchain
 python-box
 streamlit 
 langchain-community
+openai
