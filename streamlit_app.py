@@ -2,6 +2,10 @@ import streamlit as st
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 
+### Load your API Key
+my_secret_key = st.secrets['IS883-OpenAIKey-RV']
+openai.api_key = my_secret_key
+
 # Function to get response from GPT-4
 def getGPT4response(input_text, no_words, blog_style):
     # Initialize the OpenAI GPT-4 model
