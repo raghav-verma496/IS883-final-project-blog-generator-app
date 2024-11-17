@@ -35,7 +35,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-    st.header("Generate Blogs 🛫 ")
+st.header("Generate Blogs 🛫 ")
 
 # Sidebar Navigation
 st.sidebar.title("Navigation")
