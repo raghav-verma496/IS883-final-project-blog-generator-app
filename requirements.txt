@@ -1,5 +1,7 @@
 streamlit
 openai==0.28
+pandas
 langchain
 langchain-community
-pandas
+pytesseract
+pillow
