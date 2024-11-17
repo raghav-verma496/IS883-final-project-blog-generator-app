@@ -41,7 +41,7 @@ st.header("Generate Blogs 🛫 ")
 st.sidebar.title("Navigation")
 branch = st.sidebar.radio("Select a branch", ["Generate Blogs", "Pre-travel", "Post-travel"])
 
-    st.header("Generate Blogs 🛫 ")
+st.header("Generate Blogs 🛫 ")
 
     # User inputs
     input_text = st.text_input("Enter the Blog Topic")
