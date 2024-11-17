@@ -7,7 +7,6 @@ from PIL import Image, ImageFilter
 import re
 import os
 
-### IS883-OpenAIKey-RV
 ### Load your API Key
 my_secret_key = st.secrets['IS883-OpenAIKey-RV']
 os.environ["OPENAI_API_KEY"] = my_secret_key
