@@ -10,21 +10,31 @@ import pandas as pd
 import urllib.parse
 import re
 import os
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut
 
 # Load your API Key
 my_secret_key = st.secrets['IS883-OpenAIKey-RV']
 os.environ["OPENAI_API_KEY"] = my_secret_key
-
-# Function to generate Google Maps link
-def generate_maps_link(place_name):
-    base_url = "https://www.google.com/maps/search/?api=1&query="
-    return base_url + urllib.parse.quote(place_name)
 
 # Function to extract activities based on "Activity" labels
 def extract_activities_from_itinerary(itinerary_text):
     # Match lines starting with "Activity" and extract the place name
     activity_lines = re.findall(r"Activity \d+: (.*?)\n", itinerary_text)
     return list(set(activity_lines))  # Remove duplicates
+
+# Function to geocode place names to latitude and longitude
+def geocode_places(places):
+    geolocator = Nominatim(user_agent="travel_planner")
+    geocoded_data = []
+    for place in places:
+        try:
+            location = geolocator.geocode(place)
+            if location:
+                geocoded_data.append({'Place': place, 'lat': location.latitude, 'lon': location.longitude})
+        except GeocoderTimedOut:
+            st.warning(f"Geocoding timed out for {place}. Skipping.")
+    return pd.DataFrame(geocoded_data)
 
 # Initialize session state for navigation if not already set
 if "active_branch" not in st.session_state:
@@ -75,11 +85,14 @@ if st.session_state.active_branch == "Pre-travel":
             # Extract activities based on "Activity" labels
             activities = extract_activities_from_itinerary(itinerary)
 
-            st.subheader("Places to Visit with Map Links:")
             if activities:
-                for activity in activities:
-                    maps_link = generate_maps_link(activity)
-                    st.markdown(f"- **{activity}**: [View on Google Maps]({maps_link})")
+                # Geocode activities to get latitude and longitude
+                geocoded_df = geocode_places(activities)
+                if not geocoded_df.empty:
+                    st.subheader("Map of Activities:")
+                    st.map(geocoded_df[['lat', 'lon']])
+                else:
+                    st.write("Could not geocode any activities.")
             else:
                 st.write("No activities could be identified from the itinerary.")
 
