@@ -15,7 +15,7 @@ from geopy.exc import GeocoderTimedOut
 
 # Load your API Key
 my_secret_key = st.secrets['IS883-OpenAIKey-RV']
-os.environ["OPENAI_API_KEY"] = my_secret_key
+openai.api_key = my_secret_key
 
 # Function to extract activities based on "Activity" labels
 def extract_activities_from_itinerary(itinerary_text):
