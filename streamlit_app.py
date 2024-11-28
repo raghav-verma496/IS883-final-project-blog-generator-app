@@ -20,14 +20,16 @@ def generate_maps_link(place_name):
     base_url = "https://www.google.com/maps/search/?api=1&query="
     return base_url + urllib.parse.quote(place_name)
 
-# Function to extract places from the itinerary text
-def extract_places_from_itinerary(itinerary_text):
-    # Using regex to find proper nouns or capitalized words that might indicate places
-    places = re.findall(r'\b[A-Z][a-z]*(?: [A-Z][a-z]*)*', itinerary_text)
-    # Basic filtering: remove common words that are not place names
-    excluded_words = {"Day", "USD", "Visit", "Expenses", "Total"}
-    filtered_places = [place for place in places if place not in excluded_words and len(place.split()) > 1]
-    return list(set(filtered_places))  # Remove duplicates
+# Function to extract activities from the "Activity" section
+def extract_activities_from_itinerary(itinerary_text):
+    # Find the section starting with "Activity" and extract its contents
+    activity_section = re.search(r"(?i)Activity:.*?(?:(?:\n\n)|$)", itinerary_text, re.DOTALL)
+    if activity_section:
+        activities_text = activity_section.group(0)
+        # Extract proper nouns or capitalized place names within the activity section
+        places = re.findall(r'\b[A-Z][a-z]*(?: [A-Z][a-z]*)*\b', activities_text)
+        return list(set(places))  # Remove duplicates
+    return []
 
 # Initialize session state for navigation if not already set
 if "active_branch" not in st.session_state:
@@ -62,7 +64,7 @@ if st.session_state.active_branch == "Pre-travel":
         You are a travel assistant. Create a detailed itinerary for a trip from {origin} to {destination}. 
         The user is interested in general activities. The budget level is {budget}. 
         The travel dates are {travel_dates}. For each activity, include the expected expense in both local currency 
-        and USD. Provide a total expense at the end. Include at least 5 places to visit.
+        and USD. Provide a total expense at the end. Include at least 5 places to visit and list them under an "Activity" section.
         """
         prompt = prompt_template.format(origin=origin, destination=destination, budget=budget, travel_dates=travel_dates)
         try:
@@ -75,16 +77,16 @@ if st.session_state.active_branch == "Pre-travel":
             st.subheader("Generated Itinerary:")
             st.write(itinerary)
 
-            # Dynamically extract places from the itinerary
-            places_to_visit = extract_places_from_itinerary(itinerary)
+            # Extract activities from the "Activity" section
+            activities = extract_activities_from_itinerary(itinerary)
 
             st.subheader("Places to Visit with Map Links:")
-            if places_to_visit:
-                for place in places_to_visit:
-                    maps_link = generate_maps_link(place)
-                    st.markdown(f"- **{place}**: [View on Google Maps]({maps_link})")
+            if activities:
+                for activity in activities:
+                    maps_link = generate_maps_link(activity)
+                    st.markdown(f"- **{activity}**: [View on Google Maps]({maps_link})")
             else:
-                st.write("No places could be identified from the itinerary.")
+                st.write("No activities could be identified from the itinerary.")
 
         except Exception as e:
             st.error(f"An error occurred while generating the itinerary: {e}")
