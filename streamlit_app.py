@@ -20,16 +20,11 @@ def generate_maps_link(place_name):
     base_url = "https://www.google.com/maps/search/?api=1&query="
     return base_url + urllib.parse.quote(place_name)
 
-# Function to extract activities from the "Activity" section
+# Function to extract activities based on "Activity" labels
 def extract_activities_from_itinerary(itinerary_text):
-    # Find the section starting with "Activity" and extract its contents
-    activity_section = re.search(r"(?i)Activity:.*?(?:(?:\n\n)|$)", itinerary_text, re.DOTALL)
-    if activity_section:
-        activities_text = activity_section.group(0)
-        # Extract proper nouns or capitalized place names within the activity section
-        places = re.findall(r'\b[A-Z][a-z]*(?: [A-Z][a-z]*)*\b', activities_text)
-        return list(set(places))  # Remove duplicates
-    return []
+    # Match lines starting with "Activity" and extract the place name
+    activity_lines = re.findall(r"Activity \d+: (.*?)\n", itinerary_text)
+    return list(set(activity_lines))  # Remove duplicates
 
 # Initialize session state for navigation if not already set
 if "active_branch" not in st.session_state:
@@ -64,7 +59,7 @@ if st.session_state.active_branch == "Pre-travel":
         You are a travel assistant. Create a detailed itinerary for a trip from {origin} to {destination}. 
         The user is interested in general activities. The budget level is {budget}. 
         The travel dates are {travel_dates}. For each activity, include the expected expense in both local currency 
-        and USD. Provide a total expense at the end. Include at least 5 places to visit and list them under an "Activity" section.
+        and USD. Provide a total expense at the end. Include at least 5 places to visit and list them as "Activity 1", "Activity 2", etc.
         """
         prompt = prompt_template.format(origin=origin, destination=destination, budget=budget, travel_dates=travel_dates)
         try:
@@ -77,7 +72,7 @@ if st.session_state.active_branch == "Pre-travel":
             st.subheader("Generated Itinerary:")
             st.write(itinerary)
 
-            # Extract activities from the "Activity" section
+            # Extract activities based on "Activity" labels
             activities = extract_activities_from_itinerary(itinerary)
 
             st.subheader("Places to Visit with Map Links:")
