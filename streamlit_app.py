@@ -25,22 +25,22 @@ llm = OpenAI(
 )
 
 # Function to fetch flight prices using Serper.dev
-def fetch_flight_prices(origin, destination, departure_date):
-    try:
-        serper_api_key = st.secrets["SerperAPIKey"]
-        headers = {"X-API-KEY": serper_api_key, "Content-Type": "application/json"}
-        query = f"flights from {origin} to {destination} on {departure_date}"
-        payload = {"q": query}
+# def fetch_flight_prices(origin, destination, departure_date):
+#     try:
+#         serper_api_key = st.secrets["SerperAPIKey"]
+#         headers = {"X-API-KEY": serper_api_key, "Content-Type": "application/json"}
+#         query = f"flights from {origin} to {destination} on {departure_date}"
+#         payload = {"q": query}
 
-        response = requests.post("https://google.serper.dev/search", headers=headers, json=payload)
-        response.raise_for_status()
-        data = response.json()
-        snippet = data.get("answerBox", {}).get("snippet", "No flight prices found.")
-        return snippet
-    except requests.exceptions.RequestException as e:
-        return f"HTTP Request failed: {e}"
-    except ValueError:
-        return "Failed to parse the response from the Serper.dev API."
+#         response = requests.post("https://google.serper.dev/search", headers=headers, json=payload)
+#         response.raise_for_status()
+#         data = response.json()
+#         snippet = data.get("answerBox", {}).get("snippet", "No flight prices found.")
+#         return snippet
+#     except requests.exceptions.RequestException as e:
+#         return f"HTTP Request failed: {e}"
+#     except ValueError:
+#         return "Failed to parse the response from the Serper.dev API."
 
 # Initialize session state for navigation if not already set
 if "active_branch" not in st.session_state:
