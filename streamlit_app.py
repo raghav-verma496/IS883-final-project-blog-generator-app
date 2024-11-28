@@ -7,22 +7,13 @@
 import streamlit as st
 import openai
 import pandas as pd
-from langchain.llms import OpenAI
-import pytesseract
-from PIL import Image, ImageFilter
-import re
-import os
+import urllib.parse
 import requests
+import os
 
 # Load your API Key
-my_secret_key = st.secrets['IS883-OpenAIKey-RV']
+my_secret_key = st.secrets['MyOpenAIKey']
 os.environ["OPENAI_API_KEY"] = my_secret_key
-
-llm = OpenAI(
-    model_name="gpt-4o-mini",  # Replace with a valid OpenAI model
-    temperature=0.7,
-    openai_api_key=my_secret_key
-)
 
 # Function to fetch flight prices using Serper.dev
 # def fetch_flight_prices(origin, destination, departure_date):
@@ -41,6 +32,11 @@ llm = OpenAI(
 #         return f"HTTP Request failed: {e}"
 #     except ValueError:
 #         return "Failed to parse the response from the Serper.dev API."
+
+# Function to generate Google Maps link
+def generate_maps_link(place_name):
+    base_url = "https://www.google.com/maps/search/?api=1&query="
+    return base_url + urllib.parse.quote(place_name)
 
 # Initialize session state for navigation if not already set
 if "active_branch" not in st.session_state:
@@ -80,7 +76,7 @@ if st.session_state.active_branch == "Pre-travel":
         You are a travel assistant. Create a detailed itinerary for a trip from {origin} to {destination}. 
         The user is interested in general activities. The budget level is {budget}. 
         The travel dates are {travel_dates}. For each activity, include the expected expense in both local currency 
-        and USD. Provide a total expense at the end.
+        and USD. Provide a total expense at the end. Include at least 5 places to visit.
         """
         prompt = prompt_template.format(origin=origin, destination=destination, budget=budget, travel_dates=travel_dates)
         try:
@@ -89,8 +85,19 @@ if st.session_state.active_branch == "Pre-travel":
                 messages=[{"role": "user", "content": prompt}]
             )
             itinerary = response.choices[0].message["content"]
+            
             st.subheader("Generated Itinerary:")
             st.write(itinerary)
+
+            # Extract places from the generated itinerary (mock example for demonstration)
+            # In real-world cases, you'd parse these places from the itinerary text.
+            places_to_visit = ["Eiffel Tower", "Louvre Museum", "Notre-Dame Cathedral"]  # Example list of places
+
+            st.subheader("Places to Visit with Map Links:")
+            for place in places_to_visit:
+                maps_link = generate_maps_link(place)
+                st.markdown(f"- **{place}**: [View on Google Maps]({maps_link})")
+            
         except Exception as e:
             st.error(f"An error occurred while generating the itinerary: {e}")
 
