@@ -97,7 +97,7 @@ if st.session_state.active_branch == "Pre-travel":
         prompt = prompt_template.format(origin=origin, destination=destination, budget=budget, travel_dates=travel_dates)
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-4",
+                model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}]
             )
             itinerary = response.choices[0].message["content"]
