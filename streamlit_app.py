@@ -20,18 +20,25 @@ from geopy.exc import GeocoderTimedOut
 my_secret_key = st.secrets['IS883-OpenAIKey-RV']
 openai.api_key = my_secret_key
 
-# Function to generate Google Maps link
-def generate_maps_link(place_name):
-    base_url = "https://www.google.com/maps/search/?api=1&query="
-    return base_url + urllib.parse.quote(place_name)
+# Function to extract activities and coordinates from the itinerary
+def extract_activities_with_coordinates(itinerary_text):
+    # Regex to match activities with city and latitude/longitude
+    activity_pattern = re.compile(
+        r"Activity: (.*?)\nCity: (.*?)\n.*?Latitude/Longitude: ([\d.\-]+)[° ]?N, ([\d.\-]+)[° ]?E",
+        re.DOTALL
+    )
+    activities = []
+    for match in activity_pattern.finditer(itinerary_text):
+        place, city, lat, lon = match.groups()
+        activities.append({
+            'Place': place.strip(),
+            'City': city.strip(),
+            'lat': float(lat.strip()),
+            'lon': float(lon.strip())
+        })
+    return pd.DataFrame(activities)
 
-# Function to extract activities based on "Activity" labels
-def extract_activities_from_itinerary(itinerary_text):
-    # Match lines starting with "Activity" and extract the place name
-    activity_lines = re.findall(r"Activity \d+: (.*?)\n", itinerary_text)
-    return list(set(activity_lines))  # Remove duplicates
-
-# Function to geocode place names to latitude and longitude
+# Fallback function to geocode place names
 def geocode_places(places, context="Delhi, India"):
     geolocator = Nominatim(user_agent="travel_planner")
     geocoded_data = []
@@ -90,7 +97,7 @@ if st.session_state.active_branch == "Pre-travel":
         prompt = prompt_template.format(origin=origin, destination=destination, budget=budget, travel_dates=travel_dates)
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-4o-mini",
+                model="gpt-4",
                 messages=[{"role": "user", "content": prompt}]
             )
             itinerary = response.choices[0].message["content"]
@@ -98,20 +105,20 @@ if st.session_state.active_branch == "Pre-travel":
             st.subheader("Generated Itinerary:")
             st.write(itinerary)
 
-            # Extract activities based on "Activity" labels
-            activities = extract_activities_from_itinerary(itinerary)
+            # Extract activities with coordinates
+            activity_df = extract_activities_with_coordinates(itinerary)
 
-            if activities:
-                # Add destination context for geocoding
+            if not activity_df.empty:
+                st.subheader("Map of Activities:")
+                st.map(activity_df[['lat', 'lon']])
+            else:
+                st.write("No activities with coordinates found. Attempting to geocode...")
+                activities = re.findall(r"Activity: (.*?)\n", itinerary)  # Fallback for place names
                 geocoded_df = geocode_places(activities, context=destination)
-
                 if not geocoded_df.empty:
-                    st.subheader("Map of Activities:")
                     st.map(geocoded_df[['lat', 'lon']])
                 else:
                     st.write("Could not geocode any activities.")
-            else:
-                st.write("No activities could be identified from the itinerary.")
 
         except Exception as e:
             st.error(f"An error occurred while generating the itinerary: {e}")
