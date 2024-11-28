@@ -20,16 +20,11 @@ from geopy.exc import GeocoderTimedOut
 my_secret_key = st.secrets['IS883-OpenAIKey-RV']
 openai.api_key = my_secret_key
 
-# Function to generate Google Maps link
-def generate_maps_link(place_name):
-    base_url = "https://www.google.com/maps/search/?api=1&query="
-    return base_url + urllib.parse.quote(place_name)
-
-# Function to extract activities with coordinates from the itinerary
+# Function to extract activities and coordinates from the itinerary
 def extract_activities_with_coordinates(itinerary_text):
     # Match activities with city and latitude/longitude
     activity_pattern = re.compile(
-        r"Activity: (.*?)\nCity: (.*?)\n.*?Latitude/Longitude: ([\d.\-]+)[° ]?N, ([\d.\-]+)[° ]?E",
+        r"Activity Name: (.*?)\nCity and Country: (.*?)\n.*?Latitude & Longitude: ([\d.\-]+), ([\d.\-]+)",
         re.DOTALL
     )
     activities = []
@@ -118,8 +113,10 @@ if st.session_state.active_branch == "Pre-travel":
                 st.map(activity_df[['lat', 'lon']])
             else:
                 st.write("No activities with coordinates found. Attempting to geocode...")
-                activities = re.findall(r"Activity: (.*?)\n", itinerary)  # Fallback for place names
-                geocoded_df = geocode_places(activities, context=destination)
+                activities = re.findall(r"Activity Name: (.*?)\nCity and Country: (.*?)\n", itinerary)
+                geocoded_df = geocode_places(
+                    [f"{place}, {city}" for place, city in activities]
+                )
                 if not geocoded_df.empty:
                     st.map(geocoded_df[['lat', 'lon']])
                 else:
