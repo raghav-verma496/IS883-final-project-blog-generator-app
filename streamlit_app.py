@@ -67,10 +67,10 @@ if st.session_state.active_branch == "Pre-travel":
     destination = st.text_input("Flying To (Destination Airport/City)")
     travel_dates = st.date_input("Select your travel dates", [])
     
-    if origin and destination and travel_dates:
-        flight_prices = fetch_flight_prices(origin, destination, travel_dates[0].strftime("%Y-%m-%d"))
-        st.write("**Estimated Flight Prices:**")
-        st.write(flight_prices)
+    # if origin and destination and travel_dates:
+    #     flight_prices = fetch_flight_prices(origin, destination, travel_dates[0].strftime("%Y-%m-%d"))
+    #     st.write("**Estimated Flight Prices:**")
+    #     st.write(flight_prices)
 
     budget = st.selectbox("Select your budget level", ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"])
     generate_itinerary = st.button("Generate Itinerary")
