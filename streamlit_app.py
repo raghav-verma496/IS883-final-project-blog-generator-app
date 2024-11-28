@@ -24,19 +24,6 @@ llm = OpenAI(
     openai_api_key=my_secret_key
 )
 
-# Function to get response from GPT-4
-def get_gpt4_response(input_text, no_words, blog_style):
-    try:
-        prompt = f"Write a blog for a {blog_style} job profile on the topic '{input_text}'. Limit the content to approximately {no_words} words."
-        response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message["content"]
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
-        return None
-
 # Function to fetch flight prices using Serper.dev
 def fetch_flight_prices(origin, destination, departure_date):
     try:
@@ -55,52 +42,31 @@ def fetch_flight_prices(origin, destination, departure_date):
     except ValueError:
         return "Failed to parse the response from the Serper.dev API."
 
-# Function for OCR extraction
-def preprocess_and_extract(image):
-    try:
-        image = image.convert("L")  # Convert to grayscale
-        image = image.filter(ImageFilter.SHARPEN)  # Sharpen the image
-        
-        custom_config = r'--psm 6'  # Assume a block of text
-        raw_text = pytesseract.image_to_string(image, config=custom_config)
-        
-        amount = re.search(r'(\d+\.\d{2})', raw_text)  # Match amounts like 19.70
-        date = re.search(r'\d{2}/\d{2}/\d{4}', raw_text)  # Match dates like MM/DD/YYYY
-        type_keywords = ["food", "transport", "accommodation", "entertainment", "miscellaneous"]
-        category = next((kw for kw in type_keywords if kw.lower() in raw_text.lower()), "Unknown")
-        
-        return {
-            "Raw Text": raw_text,
-            "Amount": float(amount.group(1)) if amount else None,
-            "Date": date.group(0) if date else None,
-            "Type": category
-        }
-    except Exception as e:
-        st.error(f"Error during OCR processing: {e}")
-        return None
-
-# Streamlit UI configuration
-st.set_page_config(page_title="Travel Planning Assistant", page_icon="🛫", layout="centered")
+# Initialize session state for navigation if not already set
+if "active_branch" not in st.session_state:
+    st.session_state.active_branch = None  # None means no branch is active
 
 st.header("Travel Planning Assistant 🛫")
-
-# Homepage Buttons for Navigation
 st.subheader("Choose an option to get started:")
-col1, col2 = st.columns(2)
 
-with col1:
-    pre_travel = st.button("Pre-travel")
+# Display buttons only if no branch is active
+if st.session_state.active_branch is None:
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Pre-travel", key="pre_travel_btn"):
+            st.session_state.active_branch = "Pre-travel"  # Set active branch to Pre-travel
 
-with col2:
-    post_travel = st.button("Post-travel")
+    with col2:
+        if st.button("Post-travel", key="post_travel_btn"):
+            st.session_state.active_branch = "Post-travel"  # Set active branch to Post-travel
 
 # Pre-travel Branch
-if pre_travel:
+if st.session_state.active_branch == "Pre-travel":
     st.header("Plan Your Travel 🗺️")
     origin = st.text_input("Flying From (Origin Airport/City)")
     destination = st.text_input("Flying To (Destination Airport/City)")
     travel_dates = st.date_input("Select your travel dates", [])
-
+    
     if origin and destination and travel_dates:
         flight_prices = fetch_flight_prices(origin, destination, travel_dates[0].strftime("%Y-%m-%d"))
         st.write("**Estimated Flight Prices:**")
@@ -129,10 +95,15 @@ if pre_travel:
             st.error(f"An error occurred while generating the itinerary: {e}")
 
 # Post-travel Branch
-elif post_travel:
+elif st.session_state.active_branch == "Post-travel":
     st.header("Post-travel: Data Classification and Summary")
     uploaded_file = st.file_uploader("Upload your travel data (Excel file)", type=["xlsx"])
     if uploaded_file is not None:
         df = pd.read_excel(uploaded_file)
         st.subheader("Data Preview:")
         st.write(df.head())
+
+# Add a Back Button
+if st.session_state.active_branch is not None:
+    if st.button("Back to Home", key="back_btn"):
+        st.session_state.active_branch = None  # Reset active branch
