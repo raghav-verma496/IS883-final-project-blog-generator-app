@@ -4,6 +4,9 @@
 #my_secret_key = st.secrets['IS883-OpenAIKey-RV']
 #os.environ["OPENAI_API_KEY"] = my_secret_key
 
+#my_secret_key = st.secrets['IS883-OpenAIKey-RV']
+#openai.api_key = my_secret_key
+
 import streamlit as st
 import openai
 import pandas as pd
@@ -17,6 +20,11 @@ from geopy.exc import GeocoderTimedOut
 my_secret_key = st.secrets['IS883-OpenAIKey-RV']
 openai.api_key = my_secret_key
 
+# Function to generate Google Maps link
+def generate_maps_link(place_name):
+    base_url = "https://www.google.com/maps/search/?api=1&query="
+    return base_url + urllib.parse.quote(place_name)
+
 # Function to extract activities based on "Activity" labels
 def extract_activities_from_itinerary(itinerary_text):
     # Match lines starting with "Activity" and extract the place name
@@ -24,14 +32,18 @@ def extract_activities_from_itinerary(itinerary_text):
     return list(set(activity_lines))  # Remove duplicates
 
 # Function to geocode place names to latitude and longitude
-def geocode_places(places):
+def geocode_places(places, context="Delhi, India"):
     geolocator = Nominatim(user_agent="travel_planner")
     geocoded_data = []
     for place in places:
         try:
-            location = geolocator.geocode(place)
+            # Add city and country context to the place name
+            full_address = f"{place}, {context}"
+            location = geolocator.geocode(full_address, timeout=10)
             if location:
                 geocoded_data.append({'Place': place, 'lat': location.latitude, 'lon': location.longitude})
+            else:
+                st.warning(f"Could not geocode: {place}")
         except GeocoderTimedOut:
             st.warning(f"Geocoding timed out for {place}. Skipping.")
     return pd.DataFrame(geocoded_data)
@@ -65,16 +77,20 @@ if st.session_state.active_branch == "Pre-travel":
     generate_itinerary = st.button("Generate Itinerary")
 
     if generate_itinerary:
+        # Improved prompt with clear request for location and context information
         prompt_template = """
         You are a travel assistant. Create a detailed itinerary for a trip from {origin} to {destination}. 
         The user is interested in general activities. The budget level is {budget}. 
-        The travel dates are {travel_dates}. For each activity, include the expected expense in both local currency 
-        and USD. Provide a total expense at the end. Include at least 5 places to visit and list them as "Activity 1", "Activity 2", etc.
+        The travel dates are {travel_dates}. For each activity, include:
+        - Activity name
+        - City and country context
+        - Latitude and longitude for geocoding purposes
+        Provide a minimum of 5 activities with full details for accurate location mapping.
         """
         prompt = prompt_template.format(origin=origin, destination=destination, budget=budget, travel_dates=travel_dates)
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-4o-mini",
+                model="gpt-4",
                 messages=[{"role": "user", "content": prompt}]
             )
             itinerary = response.choices[0].message["content"]
@@ -86,8 +102,9 @@ if st.session_state.active_branch == "Pre-travel":
             activities = extract_activities_from_itinerary(itinerary)
 
             if activities:
-                # Geocode activities to get latitude and longitude
-                geocoded_df = geocode_places(activities)
+                # Add destination context for geocoding
+                geocoded_df = geocode_places(activities, context=destination)
+
                 if not geocoded_df.empty:
                     st.subheader("Map of Activities:")
                     st.map(geocoded_df[['lat', 'lon']])
