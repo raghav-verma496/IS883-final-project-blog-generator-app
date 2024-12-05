@@ -29,39 +29,39 @@ serper_tool = Tool(
     description="Useful for when you need to look up some information on the internet.",
 )
 
-# Function to fetch Google Maps links for itinerary activities
-def fetch_google_maps_links(activity_list):
-    activity_links = []
-    for activity in activity_list:
+# Improved function to extract specific places/landmarks
+def extract_places(itinerary_text):
+    place_pattern = r"(?:Visit|Explore|Head to|Take a walk at|Stroll through|Spend time at|Enjoy)\s+([\w\s,'-]+)"
+    matches = re.findall(place_pattern, itinerary_text)
+    places = [place.strip(" .,") for place in matches if place]
+    return places
+
+# Function to fetch Google Maps links for places
+def fetch_google_maps_links(place_list):
+    place_links = []
+    for place in place_list:
         try:
-            query = f"site:maps.google.com {activity}"
+            query = f"site:maps.google.com {place}"
             raw_response = serper_tool.func(query)
-            st.write(f"Debug: Google Serper raw response for '{activity}': {raw_response}")
+            st.write(f"Debug: Google Serper raw response for '{place}': {raw_response}")
             if "https://maps.google.com" in raw_response:
                 link_start = raw_response.find("https://maps.google.com")
                 link_end = raw_response.find(" ", link_start)
                 link = raw_response[link_start:link_end].strip()
             else:
                 link = "No link found"
-            activity_links.append({"activity": activity, "link": link})
+            place_links.append({"activity": place, "link": link})
         except Exception as e:
-            activity_links.append({"activity": activity, "link": f"Error: {e}"})
-    return activity_links
+            place_links.append({"activity": place, "link": f"Error: {e}"})
+    return place_links
 
-# Function to extract activities from itinerary text
-def extract_activities(itinerary_text):
-    # Regex to match sentences that include action keywords
-    activity_pattern = r"\b(Visit|Explore|Enjoy|Stroll|Hike|Sample|Head to|Take a walk at|Relax at|Depart for)\b.*?[.]"
-    activities = re.findall(activity_pattern, itinerary_text, re.IGNORECASE)
-    return activities
-
-# Function to generate itinerary using ChatGPT
+# Main function to generate itinerary
 def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget):
     try:
         prompt_template = """
         You are a travel assistant. Create a detailed itinerary for a trip from {origin} to {destination}. 
         The user is interested in {interests}. The budget level is {budget}. 
-        The travel dates are {travel_dates}. List activities for each day without links.
+        The travel dates are {travel_dates}. List activities for each day with specific landmarks.
         """
         travel_dates_str = f"{travel_dates[0]} to {travel_dates[1]}" if len(travel_dates) == 2 else "unspecified dates"
         prompt = prompt_template.format(
@@ -78,17 +78,17 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
         st.write(f"Debug: ChatGPT raw response: {response}")
         itinerary = response.choices[0].message["content"]
 
-        # Extract activities
-        activities = extract_activities(itinerary)
-        st.write(f"Debug: Extracted activities: {activities}")
+        # Extract specific places/landmarks
+        places = extract_places(itinerary)
+        st.write(f"Debug: Extracted places: {places}")
 
         # Fetch Google Maps links
-        activity_links = fetch_google_maps_links(activities)
-        st.write(f"Debug: Fetched Google Maps links: {activity_links}")
+        place_links = fetch_google_maps_links(places)
+        st.write(f"Debug: Fetched Google Maps links: {place_links}")
 
         # Append links to the itinerary
         itinerary_with_links = ""
-        for item in activity_links:
+        for item in place_links:
             itinerary_with_links += f"• {item['activity']}\n  Google Maps: {item['link']}\n"
 
         return itinerary_with_links
@@ -105,52 +105,23 @@ st.set_page_config(
 
 st.header("Travel Planning Assistant 🛫")
 
-# Initialize session state variables
-if "branch" not in st.session_state:
-    st.session_state.branch = None
+# UI Logic
+origin = st.text_input("Flying From (Origin Airport/City)")
+destination = st.text_input("Flying To (Destination Airport/City)")
+travel_dates = st.date_input("Select your travel date range", value=[], key="date_range")
+budget = st.selectbox(
+    "Select your budget level",
+    ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"]
+)
+interests = st.multiselect(
+    "Select your interests",
+    ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"]
+)
 
-# Homepage Navigation
-if st.session_state.branch is None:
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Pre-travel"):
-            st.session_state.branch = "Pre-travel"
-    with col2:
-        if st.button("Post-travel"):
-            st.session_state.branch = "Post-travel"
-
-# Pre-travel Branch
-if st.session_state.branch == "Pre-travel":
-    st.header("Plan Your Travel 🗺️")
-    origin = st.text_input("Flying From (Origin Airport/City)")
-    destination = st.text_input("Flying To (Destination Airport/City)")
-    travel_dates = st.date_input("Select your travel date range", value=[], key="date_range")
-    budget = st.selectbox(
-        "Select your budget level",
-        ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"]
-    )
-    interests = st.multiselect(
-        "Select your interests",
-        ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"]
-    )
-
-    if st.button("Generate Travel Itinerary"):
-        if not origin or not destination or len(travel_dates) != 2:
-            st.error("Please fill in all required fields (origin, destination, and a valid date range).")
-        else:
-            # Generate itinerary
-            itinerary = generate_itinerary_with_chatgpt(
-                origin, destination, travel_dates, interests, budget
-            )
-            # Display the results
-            with st.expander("Itinerary with Google Maps Links", expanded=True):
-                st.write(itinerary)
-
-# Post-travel Branch
-if st.session_state.branch == "Post-travel":
-    st.header("Post-travel: Data Classification and Summary")
-    uploaded_file = st.file_uploader("Upload your travel data (Excel file)", type=["xlsx"])
-    if uploaded_file is not None:
-        df = pd.read_excel(uploaded_file)
-        st.subheader("Data Preview:")
-        st.write(df.head())
+if st.button("Generate Travel Itinerary"):
+    if not origin or not destination or len(travel_dates) != 2:
+        st.error("Please fill in all required fields (origin, destination, and a valid date range).")
+    else:
+        itinerary = generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget)
+        with st.expander("Itinerary with Google Maps Links", expanded=True):
+            st.write(itinerary)
