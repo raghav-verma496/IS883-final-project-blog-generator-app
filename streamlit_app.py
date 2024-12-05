@@ -15,6 +15,8 @@ from langchain_core.tools import Tool
 from langchain_community.utilities import GoogleSerperAPIWrapper
 import openai
 import streamlit as st
+import pandas as pd
+from PIL import Image
 
 # Load API keys
 os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
@@ -84,6 +86,34 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
     except Exception as e:
         return f"An error occurred while generating the itinerary: {e}"
 
+# Function to fetch Google Maps link for an activity
+def fetch_google_maps_link(activity_name, location):
+    try:
+        query = f"Google Maps link for {activity_name} in {location}"
+        raw_response = serper_tool.func(query)
+        
+        # Extract and return the first link from the raw response
+        maps_link = raw_response.get("organic_results", [{}])[0].get("link", "No link found")
+        return maps_link
+    except Exception as e:
+        return f"An error occurred while fetching the Google Maps link: {e}"
+
+# Function to integrate Google Maps links into the itinerary
+def add_google_maps_links_to_itinerary(itinerary, location):
+    try:
+        # Split the itinerary into activities
+        activities = [line for line in itinerary.split("\n") if line.strip()]
+        
+        # Append Google Maps links for each activity
+        updated_itinerary = []
+        for activity in activities:
+            maps_link = fetch_google_maps_link(activity, location)
+            updated_itinerary.append(f"{activity} - [Google Maps Link]({maps_link})")
+        
+        return "\n".join(updated_itinerary)
+    except Exception as e:
+        return f"An error occurred while adding Google Maps links: {e}"
+
 # Streamlit UI configuration
 st.set_page_config(
     page_title="Travel Planning Assistant",
@@ -147,7 +177,7 @@ if branch == "Plan Your Travel":
         )
 
     # Step 2: Final button to generate itinerary
-    if st.session_state.interests and st.button("Generate Travel Itinerary"):
+    if st.session_state.interests and st.button("Generate Travel Itinerary with Maps Links"):
         interests = st.session_state.get("interests", [])
         if "Other" in interests:
             custom_interest = st.text_input("Enter your custom interest(s)")
@@ -158,16 +188,19 @@ if branch == "Plan Your Travel":
         flight_prices = fetch_flight_prices(origin, destination, travel_dates[0].strftime("%Y-%m-%d"))
 
         # Generate itinerary
-        itinerary = generate_itinerary_with_chatgpt(
+        raw_itinerary = generate_itinerary_with_chatgpt(
             origin, destination, travel_dates, interests, budget
         )
+
+        # Add Google Maps links
+        itinerary_with_links = add_google_maps_links_to_itinerary(raw_itinerary, destination)
 
         # Display results
         st.subheader("Estimated Flight Prices:")
         st.write(flight_prices)
 
-        st.subheader("Generated Itinerary:")
-        st.write(itinerary)
+        st.subheader("Generated Itinerary with Maps Links:")
+        st.write(itinerary_with_links)
 
 # Post-travel Branch
 elif branch == "Post-travel":
