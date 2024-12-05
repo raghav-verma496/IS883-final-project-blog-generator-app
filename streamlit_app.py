@@ -30,21 +30,26 @@ serper_tool = Tool(
     description="Useful for when you need to look up some information on the internet.",
 )
 
-# Function to generate Google Maps link
-def generate_maps_link(place_name):
-    base_url = "https://www.google.com/maps/search/?api=1&query="
-    return base_url + urllib.parse.quote(place_name)
+# Function to generate Google Maps link using latitude and longitude
+def generate_maps_link_with_coordinates(lat, lon):
+    return f"https://www.google.com/maps?q={lat},{lon}"
 
-# Function to extract activities with place names from the itinerary
-def extract_activities_with_map_links(itinerary_text):
-    # Match "Activity Name:" and extract the activity names
-    activity_pattern = re.compile(r"Activity Name: (.*?)\n", re.DOTALL)
-    activities = activity_pattern.findall(itinerary_text)
-    activity_links = [
-        {"activity": activity.strip(), "link": generate_maps_link(activity.strip())}
-        for activity in activities
-    ]
-    return activity_links
+# Function to extract activities, latitude, and longitude from the itinerary
+def extract_activities_with_coordinates(itinerary_text):
+    # Match activities with latitude and longitude
+    activity_pattern = re.compile(
+        r"Activity Name: (.*?)\n.*?Latitude and Longitude: ([\d.\-]+)[° ]?[N|S]?,? ?([\d.\-]+)[° ]?[E|W]?",
+        re.DOTALL
+    )
+    activities = []
+    for match in activity_pattern.finditer(itinerary_text):
+        activity_name, lat, lon = match.groups()
+        activities.append({
+            "activity": activity_name.strip(),
+            "latitude": lat.strip(),
+            "longitude": lon.strip()
+        })
+    return activities
 
 # Function to generate a detailed itinerary using ChatGPT
 def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget):
@@ -127,14 +132,15 @@ if branch == "Plan Your Travel":
             st.subheader("Generated Itinerary:")
             st.write(itinerary)
 
-            # Extract activities and generate map links
-            activities_with_links = extract_activities_with_map_links(itinerary)
-            if activities_with_links:
+            # Extract activities with latitude and longitude
+            activities_with_coordinates = extract_activities_with_coordinates(itinerary)
+            if activities_with_coordinates:
                 st.subheader("Places to Visit with Map Links:")
-                for item in activities_with_links:
-                    st.markdown(f"- **{item['activity']}**: [View on Google Maps]({item['link']})")
+                for activity in activities_with_coordinates:
+                    maps_link = generate_maps_link_with_coordinates(activity["latitude"], activity["longitude"])
+                    st.markdown(f"- **{activity['activity']}**: [View on Google Maps]({maps_link})")
             else:
-                st.write("No activities could be identified from the itinerary.")
+                st.write("No activities with coordinates could be identified from the itinerary.")
 
 # Post-travel Branch
 elif branch == "Post-travel":
