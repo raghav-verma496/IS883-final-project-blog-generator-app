@@ -11,6 +11,7 @@
 #openai.api_key = my_secret_key
 
 import os
+import urllib.parse
 from langchain_core.tools import Tool
 from langchain_community.utilities import GoogleSerperAPIWrapper
 import openai
@@ -19,6 +20,11 @@ import streamlit as st
 # Load API keys
 os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
 os.environ["SERPER_API_KEY"] = st.secrets["SerperAPIKey"]
+
+# Function to generate Google Maps link
+def generate_maps_link(place_name):
+    base_url = "https://www.google.com/maps/search/?api=1&query="
+    return base_url + urllib.parse.quote(place_name)
 
 # Initialize the Google Serper API Wrapper
 search = GoogleSerperAPIWrapper()
@@ -67,7 +73,7 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
         You are a travel assistant. Create a detailed itinerary for a trip from {origin} to {destination}. 
         The user is interested in {interests}. The budget level is {budget}. 
         The travel dates are {travel_dates}. For each activity, include the expected expense in both local currency 
-        and USD. Provide a total expense at the end.
+        and USD. Provide a total expense at the end. Include at least 5 places to visit and list them as "Activity 1", "Activity 2", etc.
         """
         prompt = prompt_template.format(
             origin=origin,
@@ -83,19 +89,6 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
         return response.choices[0].message["content"]
     except Exception as e:
         return f"An error occurred while generating the itinerary: {e}"
-
-# Function to fetch Google Map links for a given location
-def fetch_map_link(location):
-    try:
-        query = f"{location} site:maps.google.com"
-        response = serper_tool.func(query)
-        # Parse the first Google Maps link
-        for line in response.splitlines():
-            if "https://maps.google.com" in line:
-                return line.strip()
-        return "Map link not found"
-    except Exception as e:
-        return "Error fetching map link"
 
 # Streamlit UI configuration
 st.set_page_config(
@@ -195,22 +188,15 @@ if st.button("📝 Generate Travel Itinerary"):
             st.write(flight_prices)
 
         with st.expander("📋 Itinerary", expanded=False):
-            lines = itinerary.split("\n")
-            day_wise_plans = [line for line in lines if line.lower().startswith("day ")]
-            other_content = [line for line in lines if line not in day_wise_plans]
-            for line in other_content:
-                st.write(line)
+            st.subheader("Generated Itinerary:")
+            st.write(itinerary)
 
-            if day_wise_plans:
-                st.write("### Day-wise Plans")
-                for line in day_wise_plans:
-                    if ":" in line:
-                        parts = line.split(":")
-                        day_info = parts[0].strip()
-                        details = parts[1].strip()
-                        if " in " in details:
-                            location = details.split(" in ")[-1].strip()
-                            map_link = fetch_map_link(location)
-                            st.markdown(f"**{day_info}**")
-                            st.markdown(f":round_pushpin: **Location**: [{location}]({map_link})")
-                            st.write(details)
+            # Extract activities and generate map links
+            activities = [line.split(":")[1].strip() for line in itinerary.split("\n") if "Activity" in line]
+            st.subheader("Places to Visit with Map Links:")
+            if activities:
+                for activity in activities:
+                    maps_link = generate_maps_link(activity)
+                    st.markdown(f"- **{activity}**: [View on Google Maps]({maps_link})")
+            else:
+                st.write("No activities could be identified from the itinerary.")
