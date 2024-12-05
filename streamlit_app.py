@@ -172,7 +172,6 @@ with st.sidebar:
     interests = st.multiselect("🎯 Select your interests", ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"])
 
 # Main Content Section
-st.header("📋 Results")
 if st.button("📝 Generate Travel Itinerary"):
     if not origin or not destination or len(travel_dates) != 2:
         st.error("⚠️ Please provide all required details: origin, destination, and a valid travel date range.")
@@ -196,20 +195,19 @@ if st.button("📝 Generate Travel Itinerary"):
             if flight_prices:
                 st.markdown(display_card("Flight Prices", flight_prices), unsafe_allow_html=True)
 
-            st.subheader("📍 Places to Visit with Map Links")
-            if itinerary:
-                activities = [
-                    line.split(":")[1].strip() 
-                    for line in itinerary.split("\n") 
-                    if ":" in line and "Activity" in line
-                ]
-                if activities:
-                    places_content = "\n".join(
-                        [
-                            f"- {extract_place_name(activity)}: [View on Google Maps]({generate_maps_link(extract_place_name(activity), destination)})"
-                            for activity in activities
-                        ]
-                    )
-                    st.markdown(display_card("Places to Visit", places_content), unsafe_allow_html=True)
-                else:
-                    st.markdown(display_card("Places to Visit", "No activities could be identified."), unsafe_allow_html=True)
+        # Display map links directly on the main page
+        st.subheader("📍 Places to Visit with Map Links")
+        if itinerary:
+            activities = [
+                line.split(":")[1].strip() 
+                for line in itinerary.split("\n") 
+                if ":" in line and "Activity" in line
+            ]
+            if activities:
+                for activity in activities:
+                    place_name = extract_place_name(activity)
+                    if place_name:
+                        maps_link = generate_maps_link(place_name, destination)
+                        st.markdown(f"- **{place_name}**: [View on Google Maps]({maps_link})")
+            else:
+                st.write("No activities could be identified.")
