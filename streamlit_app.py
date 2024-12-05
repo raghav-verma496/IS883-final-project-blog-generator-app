@@ -23,18 +23,12 @@ os.environ["SERPER_API_KEY"] = st.secrets["SerperAPIKey"]
 
 # Function to generate Google Maps link
 def generate_maps_link(place_name, city_name):
-    """
-    Generate a Google Maps link specifically for a place in the given city.
-    """
     base_url = "https://www.google.com/maps/search/?api=1&query="
     full_query = f"{place_name}, {city_name}"
     return base_url + urllib.parse.quote(full_query)
 
 # Function to clean and extract valid place names
 def extract_place_name(activity_line):
-    """
-    Extract only the name of the place or location by removing prefixes or non-place text.
-    """
     prefixes_to_remove = ["Visit", "Explore", "Rest", "the", "Last-minute Shopping in"]
     for prefix in prefixes_to_remove:
         if activity_line.lower().startswith(prefix.lower()):
@@ -92,9 +86,6 @@ st.markdown(
 
 # Function to display content in cards
 def display_card(title, content):
-    """
-    Display content inside a styled card.
-    """
     return f"""
     <div style="background-color:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; border:1px solid #ddd;">
         <h4 style="color:#2980b9;">{title}</h4>
@@ -102,23 +93,21 @@ def display_card(title, content):
     </div>
     """
 
-# App Title and Description
+# App Title
 st.title("🌍 Travel Planning Assistant")
 st.write("Plan your perfect trip with personalized itineraries and flight suggestions!")
 
-# Sidebar Inputs Section
-st.header("🛠️ Trip Details")
+# Sidebar Inputs
 with st.sidebar:
+    st.header("🛠️ Trip Details")
     origin = st.text_input("Flying From (Origin Airport/City)", placeholder="Enter your departure city/airport")
     destination = st.text_input("Flying To (Destination Airport/City)", placeholder="Enter your destination city/airport")
     travel_dates = st.date_input("📅 Travel Dates", [], help="Select your trip's start and end dates.")
     budget = st.selectbox("💰 Select your budget level", ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"])
     interests = st.multiselect("🎯 Select your interests", ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"])
 
-# Results Section
-st.header("📋 Results")
-
 # Main Content
+st.header("📋 Results")
 if st.button("📝 Generate Travel Itinerary"):
     if not origin or not destination or len(travel_dates) != 2:
         st.error("⚠️ Please provide all required details: origin, destination, and a valid travel date range.")
