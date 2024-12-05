@@ -29,7 +29,7 @@ serper_tool = Tool(
     description="Useful for when you need to look up some information on the internet.",
 )
 
-# Improved function to extract specific places/landmarks
+# Function to extract specific places/landmarks
 def extract_places(itinerary_text):
     place_pattern = r"(?:Visit|Explore|Head to|Take a walk at|Stroll through|Spend time at|Enjoy)\s+([\w\s,'-]+)"
     matches = re.findall(place_pattern, itinerary_text)
@@ -43,7 +43,6 @@ def fetch_google_maps_links(place_list):
         try:
             query = f"site:maps.google.com {place}"
             raw_response = serper_tool.func(query)
-            st.write(f"Debug: Google Serper raw response for '{place}': {raw_response}")
             if "https://maps.google.com" in raw_response:
                 link_start = raw_response.find("https://maps.google.com")
                 link_end = raw_response.find(" ", link_start)
@@ -75,16 +74,13 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}]
         )
-        st.write(f"Debug: ChatGPT raw response: {response}")
         itinerary = response.choices[0].message["content"]
 
         # Extract specific places/landmarks
         places = extract_places(itinerary)
-        st.write(f"Debug: Extracted places: {places}")
 
         # Fetch Google Maps links
         place_links = fetch_google_maps_links(places)
-        st.write(f"Debug: Fetched Google Maps links: {place_links}")
 
         # Append links to the itinerary
         itinerary_with_links = ""
