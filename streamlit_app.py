@@ -200,13 +200,21 @@ if st.button("📝 Generate Travel Itinerary"):
         # Display Outputs
         st.success("✅ Your travel details are ready!")
         
-        # Use columns to display collapsible boxes side-by-side
-        col1, col2 = st.columns(2)
+        # Collapsible boxes for outputs
+        with st.expander("💰 Flight Prices", expanded=False):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("Overview")
+                st.write(flight_prices[:len(flight_prices)//2])  # Display half of the content
+            with col2:
+                st.subheader("More Details")
+                st.write(flight_prices[len(flight_prices)//2:])  # Display the other half
         
-        with col1:
-            with st.expander("💰 Flight Prices", expanded=False):
-                st.write(flight_prices)
-        
-        with col2:
-            with st.expander("📋 Itinerary", expanded=False):
-                st.write(itinerary)
+        with st.expander("📋 Itinerary", expanded=False):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("Day-by-Day Plan")
+                st.write(itinerary[:len(itinerary)//2])  # Display half of the itinerary
+            with col2:
+                st.subheader("Additional Info")
+                st.write(itinerary[len(itinerary)//2:])  # Display the other half
