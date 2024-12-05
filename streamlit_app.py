@@ -51,6 +51,8 @@ def extract_activities_with_coordinates(itinerary_text):
         })
     if not activities:
         st.warning("No activities with coordinates found. Check the itinerary format.")
+        st.write("Debugging Information:")
+        st.text(itinerary_text)  # Output the itinerary to debug format issues
     return activities
 
 # Function to generate a detailed itinerary using ChatGPT
@@ -63,7 +65,7 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
         - Activity name
         - Description
         - City and country
-        - Latitude and Longitude (if possible)
+        - Latitude and Longitude in this format: 'Latitude: xx.xxxx, Longitude: xx.xxxx'
         """
         prompt = prompt_template.format(
             origin=origin,
