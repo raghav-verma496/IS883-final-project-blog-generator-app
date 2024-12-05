@@ -204,7 +204,7 @@ if st.button("📝 Generate Travel Itinerary"):
             day_plans = itinerary.split("\n\n")
             col1, col2, col3 = st.columns(3)
 
-            # Distribute day plans into three columns
+            # Distribute day plans into three columns (excluding repeated information)
             for i, plan in enumerate(day_plans):
                 if i % 3 == 0:
                     with col1:
