@@ -257,4 +257,14 @@ if st.button("📝 Generate Travel Itinerary"):
                             if location:
                                 map_link = fetch_map_link(location)
                                 st.markdown(f":round_pushpin: **Location**: [{location}]({map_link})")
-                            st.write(details
+                            st.write(details)
+                
+                with col2:
+                    for i, line in enumerate(day_wise_plans):
+                        if i % 2 != 0:  # Odd index -> Column 2
+                            day_info, location, details = extract_location_and_details(line)
+                            st.markdown(f"**{day_info}**")
+                            if location:
+                                map_link = fetch_map_link(location)
+                                st.markdown(f":round_pushpin: **Location**: [{location}]({map_link})")
+                            st.write(details)
