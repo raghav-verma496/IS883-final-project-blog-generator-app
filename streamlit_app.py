@@ -192,7 +192,7 @@ if st.button("📝 Generate Travel Itinerary"):
                 travel_dates[0].strftime("%Y-%m-%d")
             )
 
-            #Generate itinerary
+            # Generate itinerary
             itinerary = generate_itinerary_with_chatgpt(
                 origin, destination, travel_dates, interests, budget
             )
@@ -216,15 +216,43 @@ if st.button("📝 Generate Travel Itinerary"):
             for line in other_content:
                 st.write(line)
             
+            # Function to extract location and description from day-wise plan
+            def extract_location_and_details(plan_line):
+                # Example format: "Day 1: Visit Eiffel Tower in Paris."
+                if ":" in plan_line:
+                    parts = plan_line.split(":")
+                    day_info = parts[0].strip()  # e.g., "Day 1"
+                    details = parts[1].strip()  # e.g., "Visit Eiffel Tower in Paris."
+                    
+                    # Extract the location (e.g., "Paris")
+                    location = None
+                    if " in " in details:
+                        location = details.split(" in ")[-1].strip()
+                    elif " at " in details:
+                        location = details.split(" at ")[-1].strip()
+                    
+                    return day_info, location, details
+                return plan_line, None, None
+
             # Split day-wise plans into two columns
             if day_wise_plans:
                 st.write("### Day-wise Plans")
                 col1, col2 = st.columns(2)
+                
                 with col1:
                     for i, line in enumerate(day_wise_plans):
                         if i % 2 == 0:  # Even index -> Column 1
-                            st.write(line)
+                            day_info, location, details = extract_location_and_details(line)
+                            st.markdown(f"**{day_info}**")
+                            if location:
+                                st.markdown(f":round_pushpin: **Location**: {location}")
+                            st.write(details)
+                
                 with col2:
                     for i, line in enumerate(day_wise_plans):
                         if i % 2 != 0:  # Odd index -> Column 2
-                            st.write(line)
+                            day_info, location, details = extract_location_and_details(line)
+                            st.markdown(f"**{day_info}**")
+                            if location:
+                                st.markdown(f":round_pushpin: **Location**: {location}")
+                            st.write(details)
