@@ -137,7 +137,7 @@ st.write("Plan your perfect trip with personalized itineraries and flight sugges
 
 # Input Section
 st.markdown("---")
-st.header("✈️ Flight Details")
+st.header("🛣️ Trip Details")
 
 # Use columns for better alignment
 col1, col2 = st.columns(2)
@@ -201,7 +201,7 @@ if st.button("📝 Generate Travel Itinerary"):
         st.success("✅ Your travel details are ready!")
         
         # Collapsible boxes for results
-        with st.expander("💰 Flight Prices", expanded=False):
+        with st.expander("✈️ Flight Prices", expanded=False):
             st.write(flight_prices)
         
         with st.expander("📋 Itinerary", expanded=False):
