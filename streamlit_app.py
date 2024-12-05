@@ -96,20 +96,26 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+    /* Style for headers */
     h1, h2, h3 {
         color: #2c3e50;
         font-family: 'Arial', sans-serif;
     }
+    /* Style for collapsible boxes */
     .st-expander {
         background-color: #f9f9f9;
         border-radius: 10px;
         border: 1px solid #ddd;
         padding: 10px;
     }
+    .st-expander > div {
+        margin-top: 10px;
+    }
     .st-expander-header {
         font-weight: bold;
         color: #2980b9;
     }
+    /* General adjustments */
     .stButton>button {
         background-color: #2980b9;
         color: white;
@@ -181,7 +187,9 @@ if st.button("📝 Generate Travel Itinerary"):
         with st.spinner("Fetching flight details and generating itinerary..."):
             # Fetch flight prices
             flight_prices = fetch_flight_prices(
-                origin, destination, travel_dates[0].strftime("%Y-%m-%d")
+                origin,
+                destination,
+                travel_dates[0].strftime("%Y-%m-%d")
             )
 
             # Generate itinerary
@@ -192,26 +200,9 @@ if st.button("📝 Generate Travel Itinerary"):
         # Display Outputs
         st.success("✅ Your travel details are ready!")
         
-        # Collapsible boxes for outputs
+        # Collapsible boxes for results
+        with st.expander("💰 Flight Prices", expanded=False):
+            st.write(flight_prices)
+        
         with st.expander("📋 Itinerary", expanded=False):
-            st.markdown("### Itinerary for Boston to Delhi")
-            st.write("**Travel Dates:** December 9 - December 15, 2024")
-            st.write("**Exchange Rate:** 1 USD = 83 INR")
-            
-            col1, col2, col3 = st.columns(3)
-            day_wise = itinerary.split("\n\n")  # Ensure paragraphs align
-
-            # Distribute content left-to-right
-            for i, paragraph in enumerate(day_wise):
-                if i % 3 == 0:
-                    col1.write(paragraph)
-                elif i % 3 == 1:
-                    col2.write(paragraph)
-                elif i % 3 == 2:
-                    col3.write(paragraph)
-
-            # Summary below columns
-            st.markdown("### Summary of Expenses")
-            st.write("**Total Estimated Expense:** $3,500")
-            st.markdown("### Final Thoughts")
-            st.write("Enjoy your trip and immerse yourself in the culture!")
+            st.write(itinerary)
