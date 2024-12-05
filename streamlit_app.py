@@ -92,48 +92,76 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Pre-travel Branch
-st.title("Plan Your Travel 🗺️")
+# App Title
+st.title("🌍 Travel Planning Assistant")
+st.write("Plan your perfect trip with personalized itineraries and flight suggestions!")
 
-# Flight Details
-st.subheader("Flight Details")
-origin = st.text_input("Flying From (Origin Airport/City)", placeholder="Enter your departure city/airport")
-destination = st.text_input("Flying To (Destination Airport/City)", placeholder="Enter your destination city/airport")
+# Input Section
+st.markdown("---")
+st.header("✈️ Flight Details")
 
-# Travel Dates
-st.subheader("Travel Dates")
-travel_dates = st.date_input("Select your travel date range (start and end dates)", [])
+# Use columns for better alignment
+col1, col2 = st.columns(2)
+with col1:
+    origin = st.text_input(
+        "Flying From (Origin Airport/City)",
+        placeholder="Enter your departure city/airport",
+        help="Enter the name of the city or airport you'll be flying from."
+    )
+with col2:
+    destination = st.text_input(
+        "Flying To (Destination Airport/City)",
+        placeholder="Enter your destination city/airport",
+        help="Enter the name of the city or airport you'll be flying to."
+    )
 
-# Budget and Interests
-st.subheader("Preferences")
-budget = st.selectbox(
-    "Select your budget level",
-    ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"]
+# Travel Dates Section
+st.subheader("📅 Travel Dates")
+travel_dates = st.date_input(
+    "Select your travel date range (start and end dates)",
+    [],
+    help="Choose both start and end dates for your trip."
 )
-interests = st.multiselect(
-    "Select your interests",
-    ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"]
-)
+
+# Preferences Section
+st.subheader("🎯 Preferences")
+col1, col2 = st.columns(2)
+with col1:
+    budget = st.selectbox(
+        "Select your budget level",
+        ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"],
+        help="Choose your travel budget range."
+    )
+with col2:
+    interests = st.multiselect(
+        "Select your interests",
+        ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"],
+        help="Pick activities or experiences you're interested in for your trip."
+    )
 
 # Generate Itinerary
-if st.button("Generate Travel Itinerary"):
+st.markdown("---")
+if st.button("📝 Generate Travel Itinerary"):
     if not origin or not destination or len(travel_dates) != 2:
-        st.error("Please provide all required details: origin, destination, and a valid travel date range.")
+        st.error("⚠️ Please provide all required details: origin, destination, and a valid travel date range.")
     else:
-        # Fetch flight prices
-        flight_prices = fetch_flight_prices(
-            origin,
-            destination,
-            travel_dates[0].strftime("%Y-%m-%d")
-        )
+        with st.spinner("Fetching flight details and generating itinerary..."):
+            # Fetch flight prices
+            flight_prices = fetch_flight_prices(
+                origin,
+                destination,
+                travel_dates[0].strftime("%Y-%m-%d")
+            )
 
-        # Generate itinerary
-        itinerary = generate_itinerary_with_chatgpt(
-            origin, destination, travel_dates, interests, budget
-        )
+            # Generate itinerary
+            itinerary = generate_itinerary_with_chatgpt(
+                origin, destination, travel_dates, interests, budget
+            )
 
-        # Display outputs
-        st.subheader("Flight Prices")
+        # Display Outputs
+        st.success("✅ Your travel details are ready!")
+        st.subheader("💰 Flight Prices")
         st.write(flight_prices)
-        st.subheader("Itinerary")
+        st.subheader("📋 Itinerary")
         st.write(itinerary)
+
