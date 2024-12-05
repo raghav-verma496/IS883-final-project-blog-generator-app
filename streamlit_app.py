@@ -17,8 +17,8 @@ import openai
 import streamlit as st
 
 # Load API keys
-#os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
-#os.environ["SERPER_API_KEY"] = st.secrets["SerperAPIKey"]
+os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
+os.environ["SERPER_API_KEY"] = st.secrets["SerperAPIKey"]
 
 # Initialize the Google Serper API Wrapper
 search = GoogleSerperAPIWrapper()
@@ -88,83 +88,52 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
 st.set_page_config(
     page_title="Travel Planning Assistant",
     page_icon="🛫",
-    layout="centered",
-    initial_sidebar_state="collapsed"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-st.header("Travel Planning Assistant 🛫")
-
-# Initialize session state variables
-if "branch" not in st.session_state:
-    st.session_state.branch = None
-if "origin" not in st.session_state:
-    st.session_state.origin = ""
-if "destination" not in st.session_state:
-    st.session_state.destination = ""
-if "travel_dates" not in st.session_state:
-    st.session_state.travel_dates = []
-if "budget" not in st.session_state:
-    st.session_state.budget = ""
-if "interests" not in st.session_state:
-    st.session_state.interests = []
-
-# Homepage Navigation
-if st.session_state.branch is None:
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Pre-travel"):
-            st.session_state.branch = "Pre-travel"
-    with col2:
-        if st.button("Post-travel"):
-            st.session_state.branch = "Post-travel"
-
 # Pre-travel Branch
-if st.session_state.branch == "Pre-travel":
-    st.header("Plan Your Travel 🗺️")
-    st.session_state.origin = st.text_input("Flying From (Origin Airport/City)", value=st.session_state.origin)
-    st.session_state.destination = st.text_input("Flying To (Destination Airport/City)", value=st.session_state.destination)
-    st.session_state.travel_dates = st.date_input("Select your travel dates", value=st.session_state.travel_dates)
-    st.session_state.budget = st.selectbox(
-        "Select your budget level",
-        ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"],
-        index=["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"].index(st.session_state.budget)
-        if st.session_state.budget else 0
-    )
+st.title("Plan Your Travel 🗺️")
 
-    interests = st.multiselect(
-        "Select your interests",
-        ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"],
-        default=st.session_state.interests
-    )
-    st.session_state.interests = interests
+# Flight Details
+st.subheader("Flight Details")
+origin = st.text_input("Flying From (Origin Airport/City)", placeholder="Enter your departure city/airport")
+destination = st.text_input("Flying To (Destination Airport/City)", placeholder="Enter your destination city/airport")
 
-    if st.button("Generate Travel Itinerary"):
-        if not st.session_state.origin or not st.session_state.destination or not st.session_state.travel_dates:
-            st.error("Please fill in all required fields (origin, destination, and travel dates).")
-        else:
-            flight_prices = fetch_flight_prices(
-                st.session_state.origin,
-                st.session_state.destination,
-                st.session_state.travel_dates[0].strftime("%Y-%m-%d")
-            )
-            itinerary = generate_itinerary_with_chatgpt(
-                st.session_state.origin,
-                st.session_state.destination,
-                st.session_state.travel_dates,
-                st.session_state.interests,
-                st.session_state.budget
-            )
+# Travel Dates
+st.subheader("Travel Dates")
+travel_dates = st.date_input("Select your travel date range (start and end dates)", [])
 
-            with st.expander("Flight Prices", expanded=True):
-                st.write(flight_prices)
-            with st.expander("Itinerary", expanded=True):
-                st.write(itinerary)
+# Budget and Interests
+st.subheader("Preferences")
+budget = st.selectbox(
+    "Select your budget level",
+    ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"]
+)
+interests = st.multiselect(
+    "Select your interests",
+    ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"]
+)
 
-# Post-travel Branch
-if st.session_state.branch == "Post-travel":
-    st.header("Post-travel: Data Classification and Summary")
-    uploaded_file = st.file_uploader("Upload your travel data (Excel file)", type=["xlsx"])
-    if uploaded_file is not None:
-        df = pd.read_excel(uploaded_file)
-        st.subheader("Data Preview:")
-        st.write(df.head())
+# Generate Itinerary
+if st.button("Generate Travel Itinerary"):
+    if not origin or not destination or len(travel_dates) != 2:
+        st.error("Please provide all required details: origin, destination, and a valid travel date range.")
+    else:
+        # Fetch flight prices
+        flight_prices = fetch_flight_prices(
+            origin,
+            destination,
+            travel_dates[0].strftime("%Y-%m-%d")
+        )
+
+        # Generate itinerary
+        itinerary = generate_itinerary_with_chatgpt(
+            origin, destination, travel_dates, interests, budget
+        )
+
+        # Display outputs
+        st.subheader("Flight Prices")
+        st.write(flight_prices)
+        st.subheader("Itinerary")
+        st.write(itinerary)
