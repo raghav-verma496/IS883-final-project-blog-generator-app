@@ -35,9 +35,9 @@ def extract_place_name(activity_line):
     """
     Extract only the name of the place or location by removing prefixes or non-place text.
     """
-    prefixes_to_remove = ["Visit", "Explore", "Rest", "Last-minute Shopping in"]
+    prefixes_to_remove = ["Visit", "Explore", "Rest", "the", "Last-minute Shopping in"]
     for prefix in prefixes_to_remove:
-        if activity_line.startswith(prefix):
+        if activity_line.lower().startswith(prefix.lower()):
             activity_line = activity_line.replace(prefix, "").strip()
     return activity_line
 
@@ -218,6 +218,6 @@ if st.button("📝 Generate Travel Itinerary"):
                     place_name = extract_place_name(activity)
                     if place_name:  # Only generate links for valid place names
                         maps_link = generate_maps_link(place_name, destination)
-                        st.markdown(f"- **{place_name}**: [View on Google Maps]({maps_link})", unsafe_allow_html=True)
+                        st.markdown(f"- {place_name}: [View on Google Maps]({maps_link})")
             else:
                 st.write("No activities could be identified from the itinerary.")
