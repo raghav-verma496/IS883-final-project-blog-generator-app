@@ -160,8 +160,10 @@ if st.button("📝 Generate Travel Itinerary"):
 
         # Display Outputs
         st.success("✅ Your travel details are ready!")
-        st.subheader("💰 Flight Prices")
-        st.write(flight_prices)
-        st.subheader("📋 Itinerary")
-        st.write(itinerary)
-
+        
+        # Collapsible boxes for results
+        with st.expander("💰 Flight Prices", expanded=False):
+            st.write(flight_prices)
+        
+        with st.expander("📋 Itinerary", expanded=False):
+            st.write(itinerary)
