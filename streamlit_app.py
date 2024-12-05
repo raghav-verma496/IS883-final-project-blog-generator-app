@@ -235,13 +235,7 @@ if st.session_state.itinerary and st.session_state.flight_prices:
         st.markdown(display_card("Itinerary", st.session_state.itinerary), unsafe_allow_html=True)
 
     with col2:
-        flight_info = f"""
-        ### Flight Information
-        - **Route:** {origin} to {destination}
-        - **Travel Date:** {travel_dates[0].strftime("%B %d, %Y")}
-        - **Return Date:** {travel_dates[1].strftime("%B %d, %Y")}
-        """
-        st.markdown(display_card("Flight Prices", flight_info + "<br>" + st.session_state.flight_prices), unsafe_allow_html=True)
+        st.markdown(display_card("Flight Prices", st.session_state.flight_prices), unsafe_allow_html=True)
 
     # Display map links directly on the main page
     st.subheader("📍 Places to Visit with Map Links")
