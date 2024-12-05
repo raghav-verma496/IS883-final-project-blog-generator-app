@@ -100,23 +100,38 @@ if branch == "Plan Your Travel":
         ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"]
     )
 
-    # Step 2: Collect interests dynamically
+    # Initialize session state for interests and destination interests
+    if "destination_interests" not in st.session_state:
+        st.session_state.destination_interests = []
+    if "interests" not in st.session_state:
+        st.session_state.interests = []
+
+    # Set Interests Button
     if st.button("Set Interests"):
         if not origin or not destination or not travel_dates:
             st.error("Please fill in all required fields to proceed.")
         else:
-            st.session_state.destination_interests = [
-                "Cultural Sites",
-                "Local Food",
-                "Museums",
-                "Shopping",
-                "Parks",
-                "Nightlife",
-            ]
-            st.session_state.interests = st.multiselect(
-                "Select your interests",
-                st.session_state.destination_interests + ["Other"]
+            # Dynamic interests based on destination
+            destination_interests = {
+                "New York": ["Statue of Liberty", "Central Park", "Broadway Shows", "Times Square", "Brooklyn Bridge",
+                             "Museum of Modern Art", "Empire State Building", "High Line", "Fifth Avenue", "Rockefeller Center"],
+                "Paris": ["Eiffel Tower", "Louvre Museum", "Notre-Dame Cathedral", "Champs-Élysées", "Montmartre",
+                          "Versailles", "Seine River Cruise", "Disneyland Paris", "Arc de Triomphe", "Latin Quarter"],
+                "Tokyo": ["Shinjuku Gyoen", "Tokyo Tower", "Akihabara", "Meiji Shrine", "Senso-ji Temple",
+                          "Odaiba", "Ginza", "Tsukiji Market", "Harajuku", "Roppongi"],
+            }
+            st.session_state.destination_interests = destination_interests.get(
+                destination.title(), ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", 
+                                      "Water Sports", "Music Events", "Nightlife"]
             )
+
+    # Display the dynamic interest selection list
+    if st.session_state.destination_interests:
+        st.session_state.interests = st.multiselect(
+            "Select your interests",
+            st.session_state.destination_interests + ["Other"],
+            default=st.session_state.interests
+        )
 
     # Step 3: Generate the itinerary and map links
     if st.button("Generate Travel Itinerary"):
