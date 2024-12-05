@@ -151,15 +151,12 @@ def display_card(title, content):
     """
     Display content inside a styled card.
     """
-    st.markdown(
-        f"""
-        <div style="background-color:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; border:1px solid #ddd;">
-            <h4 style="color:#2980b9;">{title}</h4>
-            <p>{content}</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    return f"""
+    <div style="background-color:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; border:1px solid #ddd;">
+        <h4 style="color:#2980b9;">{title}</h4>
+        <p>{content}</p>
+    </div>
+    """
 
 # Sidebar Inputs
 with st.sidebar:
@@ -197,27 +194,31 @@ if st.button("📝 Generate Travel Itinerary"):
             itinerary = generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget)
 
         st.success("✅ Your travel details are ready!")
-        
-        # Display itinerary in a card first
-        if itinerary:
-            display_card("Itinerary", itinerary)
 
-            # Extract activities and generate map links
+        # Create two columns
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if itinerary:
+                st.markdown(display_card("Itinerary", itinerary), unsafe_allow_html=True)
+
+        with col2:
+            if flight_prices:
+                st.markdown(display_card("Flight Prices", flight_prices), unsafe_allow_html=True)
+
+        # Display map links
+        if itinerary:
+            st.subheader("Places to Visit with Map Links:")
             activities = [
                 line.split(":")[1].strip() 
                 for line in itinerary.split("\n") 
                 if ":" in line and "Activity" in line
             ]
-            st.subheader("Places to Visit with Map Links:")
             if activities:
                 for activity in activities:
                     place_name = extract_place_name(activity)
-                    if place_name:  # Only generate links for valid place names
+                    if place_name:
                         maps_link = generate_maps_link(place_name, destination)
                         st.markdown(f"- {place_name}: [View on Google Maps]({maps_link})")
             else:
                 st.write("No activities could be identified from the itinerary.")
-
-        # Display flight prices in a card
-        if flight_prices:
-            display_card("Flight Prices", flight_prices)
