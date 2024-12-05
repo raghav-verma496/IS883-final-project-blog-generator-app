@@ -122,33 +122,44 @@ st.markdown(
         font-family: 'Arial', sans-serif;
     }
     .st-expander {
-        background-color: #f9f9f9;
-        border-radius: 10px;
-        border: 1px solid #ddd;
-        padding: 10px;
+        background-color:#f9f9f9;
+        border-radius:10px;
+        border:1px solid #ddd;
+        padding:10px;
     }
     .st-expander-header {
-        font-weight: bold;
-        color: #2980b9;
+        font-weight:bold;
+        color:#2980b9;
     }
     .stButton>button {
-        background-color: #2980b9;
-        color: white;
-        font-size: 16px;
-        border-radius: 5px;
-        padding: 10px 15px;
+        background-color:#2980b9;
+        color:white;
+        font-size:16px;
+        border-radius:5px;
+        padding:10px 15px;
     }
     .stButton>button:hover {
-        background-color: #1c598a;
+        background-color:#1c598a;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# App Title
-st.title("🌍 Travel Planning Assistant")
-st.write("Plan your perfect trip with personalized itineraries and flight suggestions!")
+# Function to display content in cards
+def display_card(title, content):
+    """
+    Display content inside a styled card.
+    """
+    st.markdown(
+        f"""
+        <div style="background-color:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; border:1px solid #ddd;">
+            <h4 style="color:#2980b9;">{title}</h4>
+            <p>{content}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # Sidebar Inputs
 with st.sidebar:
@@ -186,12 +197,14 @@ if st.button("📝 Generate Travel Itinerary"):
             itinerary = generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget)
 
         st.success("✅ Your travel details are ready!")
-        with st.expander("✈️ Flight Prices", expanded=False):
-            st.write(flight_prices)
+        
+        # Display flight prices in a card
+        if flight_prices:
+            display_card("Flight Prices", flight_prices)
 
-        with st.expander("📋 Itinerary", expanded=False):
-            st.subheader("Generated Itinerary:")
-            st.write(itinerary)
+        # Display itinerary in a card
+        if itinerary:
+            display_card("Itinerary", itinerary)
 
             # Extract activities and generate map links
             activities = [
