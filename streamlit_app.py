@@ -11,6 +11,7 @@
 #openai.api_key = my_secret_key
 
 import os
+import re
 from langchain_core.tools import Tool
 from langchain_community.utilities import GoogleSerperAPIWrapper
 import openai
@@ -47,6 +48,13 @@ def fetch_google_maps_links(activity_list):
             activity_links.append({"activity": activity, "link": f"Error: {e}"})
     return activity_links
 
+# Function to extract activities from itinerary text
+def extract_activities(itinerary_text):
+    # Regex to match sentences that include action keywords
+    activity_pattern = r"\b(Visit|Explore|Enjoy|Stroll|Hike|Sample|Head to|Take a walk at|Relax at|Depart for)\b.*?[.]"
+    activities = re.findall(activity_pattern, itinerary_text, re.IGNORECASE)
+    return activities
+
 # Function to generate itinerary using ChatGPT
 def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget):
     try:
@@ -70,12 +78,12 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
         st.write(f"Debug: ChatGPT raw response: {response}")
         itinerary = response.choices[0].message["content"]
 
-        # Extract activities from the response
-        activity_list = [line.split(". ")[-1] for line in itinerary.split("\n") if line.strip().startswith("•")]
-        st.write(f"Debug: Extracted activities: {activity_list}")
+        # Extract activities
+        activities = extract_activities(itinerary)
+        st.write(f"Debug: Extracted activities: {activities}")
 
         # Fetch Google Maps links
-        activity_links = fetch_google_maps_links(activity_list)
+        activity_links = fetch_google_maps_links(activities)
         st.write(f"Debug: Fetched Google Maps links: {activity_links}")
 
         # Append links to the itinerary
