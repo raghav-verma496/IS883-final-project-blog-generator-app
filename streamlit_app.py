@@ -87,13 +87,12 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
 # Function to fetch Google Map links for a given location
 def fetch_map_link(location):
     try:
-        query = f"{location} map"
+        query = f"{location} site:maps.google.com"
         response = serper_tool.func(query)
-        # Parse the first link from the response
-        if "maps.google.com" in response:
-            for line in response.split("\n"):
-                if "maps.google.com" in line:
-                    return line.strip()
+        # Extract the first Google Maps link
+        for line in response.splitlines():
+            if "https://maps.google.com" in line:
+                return line.strip()
         return "Map link not found"
     except Exception as e:
         return "Error fetching map link"
@@ -110,26 +109,20 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Style for headers */
     h1, h2, h3 {
         color: #2c3e50;
         font-family: 'Arial', sans-serif;
     }
-    /* Style for collapsible boxes */
     .st-expander {
         background-color: #f9f9f9;
         border-radius: 10px;
         border: 1px solid #ddd;
         padding: 10px;
     }
-    .st-expander > div {
-        margin-top: 10px;
-    }
     .st-expander-header {
         font-weight: bold;
         color: #2980b9;
     }
-    /* General adjustments */
     .stButton>button {
         background-color: #2980b9;
         color: white;
@@ -158,14 +151,12 @@ col1, col2 = st.columns(2)
 with col1:
     origin = st.text_input(
         "Flying From (Origin Airport/City)",
-        placeholder="Enter your departure city/airport",
-        help="Enter the name of the city or airport you'll be flying from."
+        placeholder="Enter your departure city/airport"
     )
 with col2:
     destination = st.text_input(
         "Flying To (Destination Airport/City)",
-        placeholder="Enter your destination city/airport",
-        help="Enter the name of the city or airport you'll be flying to."
+        placeholder="Enter your destination city/airport"
     )
 
 # Travel Dates Section
@@ -173,7 +164,6 @@ st.subheader("📅 Travel Dates")
 travel_dates = st.date_input(
     "Select your travel date range (start and end dates)",
     [],
-    help="Choose both start and end dates for your trip."
 )
 
 # Preferences Section
@@ -182,14 +172,12 @@ col1, col2 = st.columns(2)
 with col1:
     budget = st.selectbox(
         "Select your budget level",
-        ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"],
-        help="Choose your travel budget range."
+        ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"]
     )
 with col2:
     interests = st.multiselect(
         "Select your interests",
-        ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"],
-        help="Pick activities or experiences you're interested in for your trip."
+        ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"]
     )
 
 # Generate Itinerary
@@ -198,73 +186,31 @@ if st.button("📝 Generate Travel Itinerary"):
     if not origin or not destination or len(travel_dates) != 2:
         st.error("⚠️ Please provide all required details: origin, destination, and a valid travel date range.")
     else:
-        with st.spinner("Fetching flight details and generating itinerary..."):
-            # Fetch flight prices
-            flight_prices = fetch_flight_prices(
-                origin,
-                destination,
-                travel_dates[0].strftime("%Y-%m-%d")
-            )
+        with st.spinner("Fetching details..."):
+            flight_prices = fetch_flight_prices(origin, destination, travel_dates[0].strftime("%Y-%m-%d"))
+            itinerary = generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget)
 
-            # Generate itinerary
-            itinerary = generate_itinerary_with_chatgpt(
-                origin, destination, travel_dates, interests, budget
-            )
-
-        # Display Outputs
         st.success("✅ Your travel details are ready!")
-        
-        # Collapsible boxes for results
         with st.expander("✈️ Flight Prices", expanded=False):
             st.write(flight_prices)
-        
+
         with st.expander("📋 Itinerary", expanded=False):
-            # Assume itinerary content is a string and split it into lines
-            lines = itinerary.split('\n')
-            
-            # Separate day-wise plans and other content
-            day_wise_plans = [line for line in lines if line.lower().startswith('day ')]
+            lines = itinerary.split("\n")
+            day_wise_plans = [line for line in lines if line.lower().startswith("day ")]
             other_content = [line for line in lines if line not in day_wise_plans]
-            
-            # Display other content as is
             for line in other_content:
                 st.write(line)
-            
-            # Function to extract location and description from day-wise plan
-            def extract_location_and_details(plan_line):
-                if ":" in plan_line:
-                    parts = plan_line.split(":")
-                    day_info = parts[0].strip()
-                    details = parts[1].strip()
-                    location = None
-                    if " in " in details:
-                        location = details.split(" in ")[-1].strip()
-                    elif " at " in details:
-                        location = details.split(" at ")[-1].strip()
-                    return day_info, location, details
-                return plan_line, None, None
 
-            # Split day-wise plans into two columns
             if day_wise_plans:
                 st.write("### Day-wise Plans")
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    for i, line in enumerate(day_wise_plans):
-                        if i % 2 == 0:  # Even index -> Column 1
-                            day_info, location, details = extract_location_and_details(line)
+                for line in day_wise_plans:
+                    if ":" in line:
+                        parts = line.split(":")
+                        day_info = parts[0].strip()
+                        details = parts[1].strip()
+                        if " in " in details:
+                            location = details.split(" in ")[-1].strip()
+                            map_link = fetch_map_link(location)
                             st.markdown(f"**{day_info}**")
-                            if location:
-                                map_link = fetch_map_link(location)
-                                st.markdown(f":round_pushpin: **Location**: [{location}]({map_link})")
-                            st.write(details)
-                
-                with col2:
-                    for i, line in enumerate(day_wise_plans):
-                        if i % 2 != 0:  # Odd index -> Column 2
-                            day_info, location, details = extract_location_and_details(line)
-                            st.markdown(f"**{day_info}**")
-                            if location:
-                                map_link = fetch_map_link(location)
-                                st.markdown(f":round_pushpin: **Location**: [{location}]({map_link})")
+                            st.markdown(f":round_pushpin: **Location**: [{location}]({map_link})")
                             st.write(details)
