@@ -96,20 +96,26 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+    /* Style for headers */
     h1, h2, h3 {
         color: #2c3e50;
         font-family: 'Arial', sans-serif;
     }
+    /* Style for collapsible boxes */
     .st-expander {
         background-color: #f9f9f9;
         border-radius: 10px;
         border: 1px solid #ddd;
         padding: 10px;
     }
+    .st-expander > div {
+        margin-top: 10px;
+    }
     .st-expander-header {
         font-weight: bold;
         color: #2980b9;
     }
+    /* General adjustments */
     .stButton>button {
         background-color: #2980b9;
         color: white;
@@ -193,31 +199,26 @@ if st.button("📝 Generate Travel Itinerary"):
 
         # Display Outputs
         st.success("✅ Your travel details are ready!")
-
+        
         # Collapsible boxes for outputs
-        with st.expander("📋 Itinerary", expanded=True):
-            st.markdown("### Itinerary for Trip from Boston to Delhi")
-            st.write("**Travel Dates:** December 9 - December 15, 2024")
-            st.write("**Exchange Rate:** 1 USD = 83 Indian Rupees (INR) (as of latest data)")
-
-            # Split the day-wise itinerary into paragraphs
-            day_plans = itinerary.split("\n\n")
-            col1, col2, col3 = st.columns(3)
-
-            # Distribute day plans into three columns (excluding repeated information)
-            for i, plan in enumerate(day_plans):
-                if i % 3 == 0:
+        with st.expander("💰 Flight Prices", expanded=False):
+            col1, col2 = st.columns(2)
+            paragraphs = flight_prices.split("\n\n")  # Split by paragraphs
+            for i, paragraph in enumerate(paragraphs):
+                if i % 2 == 0:
                     with col1:
-                        st.write(plan)
-                elif i % 3 == 1:
-                    with col2:
-                        st.write(plan)
+                        st.write(paragraph)
                 else:
-                    with col3:
-                        st.write(plan)
-
-            # Add summary and final thoughts
-            st.markdown("### Summary of Expenses")
-            st.write("**Total Estimated Expense:** $3,500 (approx.)")
-            st.markdown("### Final Thoughts")
-            st.write("Enjoy your trip to Delhi! Immerse yourself in the culture, explore the sites, and savor the local cuisine.")
+                    with col2:
+                        st.write(paragraph)
+        
+        with st.expander("📋 Itinerary", expanded=False):
+            col1, col2 = st.columns(2)
+            paragraphs = itinerary.split("\n\n")  # Split by paragraphs
+            for i, paragraph in enumerate(paragraphs):
+                if i % 2 == 0:
+                    with col1:
+                        st.write(paragraph)
+                else:
+                    with col2:
+                        st.write(paragraph)
