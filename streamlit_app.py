@@ -203,47 +203,55 @@ with st.sidebar:
     budget = st.selectbox("💰 Select your budget level", ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"])
     interests = st.multiselect("🎯 Select your interests", ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"])
 
+# Store results in session state
+if "itinerary" not in st.session_state:
+    st.session_state.itinerary = None
+if "flight_prices" not in st.session_state:
+    st.session_state.flight_prices = None
+
 # Main Content Section
 if st.button("📝 Generate Travel Itinerary"):
     if not origin or not destination or len(travel_dates) != 2:
         st.error("⚠️ Please provide all required details: origin, destination, and a valid travel date range.")
     else:
         with st.spinner("Fetching details..."):
-            flight_prices = fetch_flight_prices(origin, destination, travel_dates[0].strftime("%Y-%m-%d"))
-            itinerary = generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget)
+            st.session_state.flight_prices = fetch_flight_prices(origin, destination, travel_dates[0].strftime("%Y-%m-%d"))
+            st.session_state.itinerary = generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget)
 
-        st.success("✅ Your travel details are ready!")
+# Display results only if available
+if st.session_state.itinerary and st.session_state.flight_prices:
+    st.success("✅ Your travel details are ready!")
 
-        # Create two columns
-        col1, col2 = st.columns(2)
+    # Create two columns
+    col1, col2 = st.columns(2)
 
-        with col1:
-            st.markdown(display_card("Itinerary", itinerary), unsafe_allow_html=True)
+    with col1:
+        st.markdown(display_card("Itinerary", st.session_state.itinerary), unsafe_allow_html=True)
 
-        with col2:
-            st.markdown(display_card("Flight Prices", flight_prices), unsafe_allow_html=True)
+    with col2:
+        st.markdown(display_card("Flight Prices", st.session_state.flight_prices), unsafe_allow_html=True)
 
-        # Display map links directly on the main page
-        st.subheader("📍 Places to Visit with Map Links")
-        activities = [
-            line.split(":")[1].strip() 
-            for line in itinerary.split("\n") 
-            if ":" in line and "Activity" in line
-        ]
-        if activities:
-            for activity in activities:
-                place_name = extract_place_name(activity)
-                if place_name:
-                    maps_link = generate_maps_link(place_name, destination)
-                    st.markdown(f"- **{place_name}**: [View on Google Maps]({maps_link})")
-        else:
-            st.write("No activities could be identified.")
+    # Display map links directly on the main page
+    st.subheader("📍 Places to Visit with Map Links")
+    activities = [
+        line.split(":")[1].strip() 
+        for line in st.session_state.itinerary.split("\n") 
+        if ":" in line and "Activity" in line
+    ]
+    if activities:
+        for activity in activities:
+            place_name = extract_place_name(activity)
+            if place_name:
+                maps_link = generate_maps_link(place_name, destination)
+                st.markdown(f"- **{place_name}**: [View on Google Maps]({maps_link})")
+    else:
+        st.write("No activities could be identified.")
 
-        # Generate and provide download link for PDF
-        pdf_buffer = create_pdf(itinerary, flight_prices)
-        st.download_button(
-            label="📥 Download Itinerary as PDF",
-            data=pdf_buffer,
-            file_name="travel_itinerary.pdf",
-            mime="application/pdf",
-        )
+    # Generate and provide download link for PDF
+    pdf_buffer = create_pdf(st.session_state.itinerary, st.session_state.flight_prices)
+    st.download_button(
+        label="📥 Download Itinerary as PDF",
+        data=pdf_buffer,
+        file_name="travel_itinerary.pdf",
+        mime="application/pdf",
+    )
