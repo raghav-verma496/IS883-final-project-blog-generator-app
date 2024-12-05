@@ -203,22 +203,18 @@ if st.button("📝 Generate Travel Itinerary"):
         # Collapsible boxes for outputs
         with st.expander("💰 Flight Prices", expanded=False):
             col1, col2 = st.columns(2)
-            paragraphs = flight_prices.split("\n\n")  # Split by paragraphs
-            for i, paragraph in enumerate(paragraphs):
-                if i % 2 == 0:
-                    with col1:
-                        st.write(paragraph)
-                else:
-                    with col2:
-                        st.write(paragraph)
+            with col1:
+                st.subheader("Overview")
+                st.write(flight_prices[:len(flight_prices)//2])  # Display half of the content
+            with col2:
+                st.subheader("More Details")
+                st.write(flight_prices[len(flight_prices)//2:])  # Display the other half
         
         with st.expander("📋 Itinerary", expanded=False):
             col1, col2 = st.columns(2)
-            paragraphs = itinerary.split("\n\n")  # Split by paragraphs
-            for i, paragraph in enumerate(paragraphs):
-                if i % 2 == 0:
-                    with col1:
-                        st.write(paragraph)
-                else:
-                    with col2:
-                        st.write(paragraph)
+            with col1:
+                st.subheader("Day-by-Day Plan")
+                st.write(itinerary[:len(itinerary)//2])  # Display half of the itinerary
+            with col2:
+                st.subheader("Additional Info")
+                st.write(itinerary[len(itinerary)//2:])  # Display the other half
