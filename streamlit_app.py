@@ -145,6 +145,42 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Add custom CSS for sky blue background
+st.markdown(
+    """
+    <style>
+    body {
+        background-color: #e3f2fd;
+    }
+    h1, h2, h3 {
+        color: #2c3e50;
+        font-family: 'Arial', sans-serif;
+    }
+    .st-expander {
+        background-color: #f9f9f9;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+        padding: 10px;
+    }
+    .st-expander-header {
+        font-weight: bold;
+        color: #2980b9;
+    }
+    .stButton>button {
+        background-color: #2980b9;
+        color: white;
+        font-size: 16px;
+        border-radius: 5px;
+        padding: 10px 15px;
+    }
+    .stButton>button:hover {
+        background-color: #1c598a;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # Function to display content in cards
 def display_card(title, content):
     return f"""
