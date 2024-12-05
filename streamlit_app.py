@@ -13,8 +13,9 @@
 import os
 import urllib.parse
 from io import BytesIO
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
+from reportlab.lib.styles import getSampleStyleSheet
 from langchain_core.tools import Tool
 from langchain_community.utilities import GoogleSerperAPIWrapper
 import openai
@@ -105,31 +106,34 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
 # Function to create a PDF from itinerary and flight prices
 def create_pdf(itinerary, flight_prices):
     buffer = BytesIO()
-    pdf = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
 
-    # Title
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(72, height - 72, "Travel Itinerary")
+    # Styles for the document
+    styles = getSampleStyleSheet()
+    title_style = styles["Heading1"]
+    section_style = styles["Heading2"]
+    text_style = styles["BodyText"]
 
-    # Itinerary Section
-    pdf.setFont("Helvetica-Bold", 14)
-    pdf.drawString(72, height - 100, "Itinerary:")
-    pdf.setFont("Helvetica", 12)
-    text = pdf.beginText(72, height - 120)
+    elements = []
+
+    # Add title
+    elements.append(Paragraph("Travel Itinerary", title_style))
+    elements.append(Spacer(1, 20))  # Add space
+
+    # Add itinerary section
+    elements.append(Paragraph("Itinerary:", section_style))
     for line in itinerary.splitlines():
-        text.textLine(line)
-    pdf.drawText(text)
+        elements.append(Paragraph(line, text_style))
+    elements.append(Spacer(1, 20))  # Add space
 
-    # Flight Prices Section
-    pdf.setFont("Helvetica-Bold", 14)
-    pdf.drawString(72, height - 220, "Flight Prices:")
-    text = pdf.beginText(72, height - 240)
+    # Add flight prices section
+    elements.append(Paragraph("Flight Prices:", section_style))
     for line in flight_prices.splitlines():
-        text.textLine(line)
-    pdf.drawText(text)
+        elements.append(Paragraph(line, text_style))
+    elements.append(Spacer(1, 20))  # Add space
 
-    pdf.save()
+    # Build the PDF
+    doc.build(elements)
     buffer.seek(0)
     return buffer
 
