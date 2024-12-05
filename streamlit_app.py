@@ -34,25 +34,25 @@ serper_tool = Tool(
 def generate_maps_link_with_coordinates(lat, lon):
     return f"https://www.google.com/maps?q={lat},{lon}"
 
-# Function to extract activities, latitude, and longitude from the itinerary
-def extract_activities_with_coordinates(itinerary_text):
-    # Enhanced regex to match activities and coordinates
+# Function to extract activities only
+def extract_activities_from_itinerary(itinerary_text):
+    # Regex to match "Activity" sections with coordinates
     activity_pattern = re.compile(
-        r"Activity Name: (.*?)\n.*?Latitude and Longitude: ([\d.\-]+)[° ]?[N|S]?[;,]? ?([\d.\-]+)[° ]?[E|W]?",
+        r"Activity: (.*?)\nDescription: (.*?)\nCity: (.*?)\nLatitude: ([\d\.\-]+)\nLongitude: ([\d\.\-]+)",
         re.DOTALL
     )
     activities = []
     for match in activity_pattern.finditer(itinerary_text):
-        activity_name, lat, lon = match.groups()
+        activity_name, description, city, lat, lon = match.groups()
         activities.append({
             "activity": activity_name.strip(),
+            "description": description.strip(),
+            "city": city.strip(),
             "latitude": lat.strip(),
             "longitude": lon.strip()
         })
     if not activities:
-        st.warning("No activities with coordinates found. Check the itinerary format.")
-        st.write("Debugging Information:")
-        st.text(itinerary_text)  # Output the itinerary to debug format issues
+        st.warning("No activities found. Check the itinerary format or try generating it again.")
     return activities
 
 # Function to generate a detailed itinerary using ChatGPT
@@ -61,11 +61,17 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
         prompt_template = """
         You are a travel assistant. Create a detailed itinerary for a trip from {origin} to {destination}. 
         The user is interested in {interests}. The budget level is {budget}. 
-        The travel dates are {travel_dates}. For each activity, include:
-        - Activity name
-        - Description
-        - City and country
-        - Latitude and Longitude in this format: 'Latitude: xx.xxxx, Longitude: xx.xxxx'
+        The travel dates are {travel_dates}.
+        
+        Format your response as follows:
+        Day X: [Title]
+        Activity: [Name]
+        Description: [Detailed description of the activity]
+        City: [City, Country]
+        Latitude: [Latitude in decimal format]
+        Longitude: [Longitude in decimal format]
+
+        Include at least 5 activities, each with full details as above.
         """
         prompt = prompt_template.format(
             origin=origin,
@@ -113,7 +119,7 @@ if branch == "Plan Your Travel":
     if "interests" not in st.session_state:
         st.session_state.interests = []
 
-    # Collect Interests
+    # Set Interests Button
     if st.button("Set Interests"):
         if not origin or not destination or not travel_dates:
             st.error("Please fill in all required fields to proceed.")
@@ -136,15 +142,16 @@ if branch == "Plan Your Travel":
             st.subheader("Generated Itinerary:")
             st.write(itinerary)
 
-            # Extract activities with latitude and longitude
-            activities_with_coordinates = extract_activities_with_coordinates(itinerary)
-            if activities_with_coordinates:
+            # Extract activities and generate map links
+            activities = extract_activities_from_itinerary(itinerary)
+            if activities:
                 st.subheader("Places to Visit with Map Links:")
-                for activity in activities_with_coordinates:
+                for activity in activities:
                     maps_link = generate_maps_link_with_coordinates(activity["latitude"], activity["longitude"])
                     st.markdown(f"- **{activity['activity']}**: [View on Google Maps]({maps_link})")
+                    st.write(f"Description: {activity['description']}")
             else:
-                st.write("No activities with coordinates could be identified from the itinerary.")
+                st.write("No activities could be identified from the itinerary.")
 
 # Post-travel Branch
 elif branch == "Post-travel":
