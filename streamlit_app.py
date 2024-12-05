@@ -22,13 +22,19 @@ os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
 os.environ["SERPER_API_KEY"] = st.secrets["SerperAPIKey"]
 
 # Function to generate Google Maps link
-def generate_maps_link(place_name):
+def generate_maps_link(place_name, city_name):
+    """
+    Generate a Google Maps link specifically for a place in the given city.
+    """
     base_url = "https://www.google.com/maps/search/?api=1&query="
-    return base_url + urllib.parse.quote(place_name)
+    full_query = f"{place_name}, {city_name}"
+    return base_url + urllib.parse.quote(full_query)
 
 # Function to clean and extract valid place names
 def extract_place_name(activity_line):
-    # Remove action words like "Visit", "Explore", "Rest and get acclimatized", etc.
+    """
+    Extract only the name of the place or location by removing prefixes or non-place text.
+    """
     prefixes_to_remove = ["Visit", "Explore", "Rest", "Last-minute Shopping in"]
     for prefix in prefixes_to_remove:
         if activity_line.startswith(prefix):
@@ -211,7 +217,7 @@ if st.button("📝 Generate Travel Itinerary"):
                 for activity in activities:
                     place_name = extract_place_name(activity)
                     if place_name:  # Only generate links for valid place names
-                        maps_link = generate_maps_link(place_name)
+                        maps_link = generate_maps_link(place_name, destination)
                         st.markdown(f"- **{place_name}**: [View on Google Maps]({maps_link})")
             else:
                 st.write("No activities could be identified from the itinerary.")
