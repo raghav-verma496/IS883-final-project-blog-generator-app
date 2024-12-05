@@ -89,7 +89,7 @@ def fetch_map_link(location):
     try:
         query = f"{location} site:maps.google.com"
         response = serper_tool.func(query)
-        # Extract the first Google Maps link
+        # Parse the first Google Maps link
         for line in response.splitlines():
             if "https://maps.google.com" in line:
                 return line.strip()
