@@ -198,11 +198,7 @@ if st.button("📝 Generate Travel Itinerary"):
 
         st.success("✅ Your travel details are ready!")
         
-        # Display flight prices in a card
-        if flight_prices:
-            display_card("Flight Prices", flight_prices)
-
-        # Display itinerary in a card
+        # Display itinerary in a card first
         if itinerary:
             display_card("Itinerary", itinerary)
 
@@ -221,3 +217,7 @@ if st.button("📝 Generate Travel Itinerary"):
                         st.markdown(f"- {place_name}: [View on Google Maps]({maps_link})")
             else:
                 st.write("No activities could be identified from the itinerary.")
+
+        # Display flight prices in a card
+        if flight_prices:
+            display_card("Flight Prices", flight_prices)
