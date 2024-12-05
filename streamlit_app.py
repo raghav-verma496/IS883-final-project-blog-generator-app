@@ -49,62 +49,6 @@ serper_tool = Tool(
     description="Useful for when you need to look up some information on the internet.",
 )
 
-# Function to query ChatGPT for better formatting
-def format_flight_prices_with_chatgpt(raw_response, origin, destination, departure_date):
-    try:
-        prompt = f"""
-        You are a helpful assistant. I received the following raw flight information for a query:
-        'Flights from {origin} to {destination} on {departure_date}':
-        {raw_response}
-
-        Please clean and reformat this information into a professional, readable format. Use bullet points,
-        categories, or a table wherever appropriate to make it easy to understand. Also include key highlights
-        like the cheapest fare, airlines, and travel dates. Ensure that any missing or irrelevant text is ignored.
-        """
-        response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message["content"]
-    except Exception as e:
-        return f"An error occurred while formatting the response: {e}"
-
-# Function to fetch flight prices and format them with ChatGPT
-def fetch_flight_prices(origin, destination, departure_date):
-    try:
-        query = f"flights from {origin} to {destination} on {departure_date}"
-        raw_response = serper_tool.func(query)
-        formatted_response = format_flight_prices_with_chatgpt(
-            raw_response, origin, destination, departure_date
-        )
-        return formatted_response
-    except Exception as e:
-        return f"An error occurred while fetching or formatting flight prices: {e}"
-
-# Function to generate a detailed itinerary using ChatGPT
-def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget):
-    try:
-        prompt_template = """
-        You are a travel assistant. Create a detailed itinerary for a trip from {origin} to {destination}. 
-        The user is interested in {interests}. The budget level is {budget}. 
-        The travel dates are {travel_dates}. For each activity, include the expected expense in both local currency 
-        and USD. Provide a total expense at the end. Include at least 5 places to visit and list them as "Activity 1", "Activity 2", etc.
-        """
-        prompt = prompt_template.format(
-            origin=origin,
-            destination=destination,
-            interests=", ".join(interests) if interests else "general activities",
-            budget=budget,
-            travel_dates=travel_dates
-        )
-        response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message["content"]
-    except Exception as e:
-        return f"An error occurred while generating the itinerary: {e}"
-
 # Streamlit UI configuration
 st.set_page_config(
     page_title="Travel Planning Assistant",
@@ -158,33 +102,21 @@ def display_card(title, content):
     </div>
     """
 
-# Sidebar Inputs
-with st.sidebar:
-    st.header("🛠️ Trip Details")
-    origin = st.text_input(
-        "Flying From (Origin Airport/City)",
-        placeholder="Enter your departure city/airport"
-    )
-    destination = st.text_input(
-        "Flying To (Destination Airport/City)",
-        placeholder="Enter your destination city/airport"
-    )
-    travel_dates = st.date_input(
-        "📅 Travel Dates",
-        [],
-        help="Select your trip's start and end dates."
-    )
-    budget = st.selectbox(
-        "💰 Select your budget level",
-        ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"]
-    )
-    interests = st.multiselect(
-        "🎯 Select your interests",
-        ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"]
-    )
+# App Title and Description
+st.title("🌍 Travel Planning Assistant")
+st.write("Plan your perfect trip with personalized itineraries and flight suggestions!")
 
-# Main Content
-st.markdown("---")
+# Sidebar Section
+st.sidebar.header("🛠️ Trip Details")
+with st.sidebar:
+    origin = st.text_input("Flying From (Origin Airport/City)", placeholder="Enter your departure city/airport")
+    destination = st.text_input("Flying To (Destination Airport/City)", placeholder="Enter your destination city/airport")
+    travel_dates = st.date_input("📅 Travel Dates", [], help="Select your trip's start and end dates.")
+    budget = st.selectbox("💰 Select your budget level", ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"])
+    interests = st.multiselect("🎯 Select your interests", ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"])
+
+# Main Content Section
+st.header("📋 Results")
 if st.button("📝 Generate Travel Itinerary"):
     if not origin or not destination or len(travel_dates) != 2:
         st.error("⚠️ Please provide all required details: origin, destination, and a valid travel date range.")
@@ -199,26 +131,29 @@ if st.button("📝 Generate Travel Itinerary"):
         col1, col2 = st.columns(2)
 
         with col1:
+            st.subheader("🗺️ Itinerary")
             if itinerary:
                 st.markdown(display_card("Itinerary", itinerary), unsafe_allow_html=True)
 
         with col2:
+            st.subheader("✈️ Flight Prices")
             if flight_prices:
                 st.markdown(display_card("Flight Prices", flight_prices), unsafe_allow_html=True)
 
-        # Display map links
-        if itinerary:
-            st.subheader("Places to Visit with Map Links:")
-            activities = [
-                line.split(":")[1].strip() 
-                for line in itinerary.split("\n") 
-                if ":" in line and "Activity" in line
-            ]
-            if activities:
-                for activity in activities:
-                    place_name = extract_place_name(activity)
-                    if place_name:
-                        maps_link = generate_maps_link(place_name, destination)
-                        st.markdown(f"- {place_name}: [View on Google Maps]({maps_link})")
-            else:
-                st.write("No activities could be identified from the itinerary.")
+            st.subheader("📍 Places to Visit with Map Links")
+            if itinerary:
+                activities = [
+                    line.split(":")[1].strip() 
+                    for line in itinerary.split("\n") 
+                    if ":" in line and "Activity" in line
+                ]
+                if activities:
+                    places_content = "\n".join(
+                        [
+                            f"- {extract_place_name(activity)}: [View on Google Maps]({generate_maps_link(extract_place_name(activity), destination)})"
+                            for activity in activities
+                        ]
+                    )
+                    st.markdown(display_card("Places to Visit", places_content), unsafe_allow_html=True)
+                else:
+                    st.markdown(display_card("Places to Visit", "No activities could be identified."), unsafe_allow_html=True)
