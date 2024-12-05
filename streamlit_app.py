@@ -192,7 +192,7 @@ if st.button("📝 Generate Travel Itinerary"):
                 travel_dates[0].strftime("%Y-%m-%d")
             )
 
-            # Generate itinerary
+            #Generate itinerary
             itinerary = generate_itinerary_with_chatgpt(
                 origin, destination, travel_dates, interests, budget
             )
@@ -205,4 +205,26 @@ if st.button("📝 Generate Travel Itinerary"):
             st.write(flight_prices)
         
         with st.expander("📋 Itinerary", expanded=False):
-            st.write(itinerary)
+            # Assume itinerary content is a string and split it into lines
+            lines = itinerary.split('\n')
+            
+            # Separate day-wise plans and other content
+            day_wise_plans = [line for line in lines if line.lower().startswith('day ')]
+            other_content = [line for line in lines if line not in day_wise_plans]
+            
+            # Display other content as is
+            for line in other_content:
+                st.write(line)
+            
+            # Split day-wise plans into two columns
+            if day_wise_plans:
+                st.write("### Day-wise Plans")
+                col1, col2 = st.columns(2)
+                with col1:
+                    for i, line in enumerate(day_wise_plans):
+                        if i % 2 == 0:  # Even index -> Column 1
+                            st.write(line)
+                with col2:
+                    for i, line in enumerate(day_wise_plans):
+                        if i % 2 != 0:  # Odd index -> Column 2
+                            st.write(line)
