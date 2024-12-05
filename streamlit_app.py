@@ -17,8 +17,7 @@ import openai
 import streamlit as st
 
 # Load API keys
-my_secret_key = st.secrets['IS883-OpenAIKey-RV']
-os.environ["OPENAI_API_KEY"] = my_secret_key
+os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
 os.environ["SERPER_API_KEY"] = st.secrets["SerperAPIKey"]
 
 # Initialize the Google Serper API Wrapper
