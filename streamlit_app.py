@@ -11,6 +11,7 @@
 #openai.api_key = my_secret_key
 
 import os
+import reportlab
 import urllib.parse
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
