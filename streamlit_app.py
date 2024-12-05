@@ -116,13 +116,20 @@ def create_pdf(itinerary, flight_prices):
     pdf.setFont("Helvetica-Bold", 14)
     pdf.drawString(72, height - 100, "Itinerary:")
     pdf.setFont("Helvetica", 12)
-    pdf.drawString(72, height - 120, itinerary)
+    text = pdf.beginText(72, height - 120)
+    text.setFont("Helvetica", 12)
+    for line in itinerary.splitlines():
+        text.textLine(line)
+    pdf.drawText(text)
 
     # Flight Prices Section
     pdf.setFont("Helvetica-Bold", 14)
-    pdf.drawString(72, height - 160, "Flight Prices:")
+    pdf.drawString(72, height - 220, "Flight Prices:")
     pdf.setFont("Helvetica", 12)
-    pdf.drawString(72, height - 180, flight_prices)
+    text = pdf.beginText(72, height - 240)
+    for line in flight_prices.splitlines():
+        text.textLine(line)
+    pdf.drawText(text)
 
     pdf.save()
     buffer.seek(0)
@@ -134,39 +141,6 @@ st.set_page_config(
     page_icon="🛫",
     layout="wide",
     initial_sidebar_state="expanded"
-)
-
-# Add custom CSS styling
-st.markdown(
-    """
-    <style>
-    h1, h2, h3 {
-        color: #2c3e50;
-        font-family: 'Arial', sans-serif;
-    }
-    .st-expander {
-        background-color:#f9f9f9;
-        border-radius:10px;
-        border:1px solid #ddd;
-        padding:10px;
-    }
-    .st-expander-header {
-        font-weight:bold;
-        color:#2980b9;
-    }
-    .stButton>button {
-        background-color:#2980b9;
-        color:white;
-        font-size:16px;
-        border-radius:5px;
-        padding:10px 15px;
-    }
-    .stButton>button:hover {
-        background-color:#1c598a;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
 )
 
 # App Title
