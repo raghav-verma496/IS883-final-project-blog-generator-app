@@ -150,45 +150,32 @@ st.markdown(
 st.title("🌍 Travel Planning Assistant")
 st.write("Plan your perfect trip with personalized itineraries and flight suggestions!")
 
-# Input Section
-st.markdown("---")
-st.header("🛣️ Trip Details")
-
-# Use columns for better alignment
-col1, col2 = st.columns(2)
-with col1:
+# Sidebar Inputs
+with st.sidebar:
+    st.header("🛠️ Trip Details")
     origin = st.text_input(
         "Flying From (Origin Airport/City)",
         placeholder="Enter your departure city/airport"
     )
-with col2:
     destination = st.text_input(
         "Flying To (Destination Airport/City)",
         placeholder="Enter your destination city/airport"
     )
-
-# Travel Dates Section
-st.subheader("📅 Travel Dates")
-travel_dates = st.date_input(
-    "Select your travel date range (start and end dates)",
-    [],
-)
-
-# Preferences Section
-st.subheader("🎯 Preferences")
-col1, col2 = st.columns(2)
-with col1:
+    travel_dates = st.date_input(
+        "📅 Travel Dates",
+        [],
+        help="Select your trip's start and end dates."
+    )
     budget = st.selectbox(
-        "Select your budget level",
+        "💰 Select your budget level",
         ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"]
     )
-with col2:
     interests = st.multiselect(
-        "Select your interests",
+        "🎯 Select your interests",
         ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"]
     )
 
-# Generate Itinerary
+# Main Content
 st.markdown("---")
 if st.button("📝 Generate Travel Itinerary"):
     if not origin or not destination or len(travel_dates) != 2:
