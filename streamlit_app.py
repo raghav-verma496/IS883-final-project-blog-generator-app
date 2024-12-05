@@ -195,17 +195,6 @@ if st.button("📝 Generate Travel Itinerary"):
         st.success("✅ Your travel details are ready!")
         
         # Collapsible boxes for outputs
-        with st.expander("💰 Flight Prices", expanded=False):
-            col1, col2 = st.columns(2)
-            paragraphs = flight_prices.split("\n\n")  # Split by paragraphs
-            for i, paragraph in enumerate(paragraphs):
-                if i % 2 == 0:
-                    with col1:
-                        st.write(paragraph)
-                else:
-                    with col2:
-                        st.write(paragraph)
-        
         with st.expander("📋 Itinerary", expanded=False):
             st.markdown("### Trip Itinerary")
             st.write("**Travel Dates:** December 9 - December 15, 2024")
@@ -213,16 +202,15 @@ if st.button("📝 Generate Travel Itinerary"):
             
             col1, col2, col3 = st.columns(3)
             day_wise = itinerary.split("\n\n")  # Ensure paragraphs align
+
+            # Distribute content left-to-right
             for i, paragraph in enumerate(day_wise):
                 if i % 3 == 0:
-                    with col1:
-                        st.write(paragraph)
+                    col1.write(paragraph)
                 elif i % 3 == 1:
-                    with col2:
-                        st.write(paragraph)
-                else:
-                    with col3:
-                        st.write(paragraph)
+                    col2.write(paragraph)
+                elif i % 3 == 2:
+                    col3.write(paragraph)
 
             # Summary below columns
             st.markdown("### Summary of Expenses")
