@@ -20,6 +20,7 @@ from langchain_core.tools import Tool
 from langchain_community.utilities import GoogleSerperAPIWrapper
 import openai
 import streamlit as st
+import time
 
 # Load API keys
 os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
@@ -214,6 +215,11 @@ if st.button("📝 Generate Travel Itinerary"):
     if not origin or not destination or len(travel_dates) != 2:
         st.error("⚠️ Please provide all required details: origin, destination, and a valid travel date range.")
     else:
+        progress = st.progress(0)
+        for i in range(100):
+            time.sleep(0.01)  # Simulate loading time
+            progress.progress(i + 1)
+
         with st.spinner("Fetching details..."):
             st.session_state.flight_prices = fetch_flight_prices(origin, destination, travel_dates[0].strftime("%Y-%m-%d"))
             st.session_state.itinerary = generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget)
