@@ -60,14 +60,31 @@ def fetch_flight_prices(origin, destination, departure_date):
     except Exception as e:
         return f"An error occurred while fetching or formatting flight prices: {e}"
 
+# Function to fetch Google Maps links for itinerary activities
+def fetch_google_maps_links(activity_list):
+    activity_links = []
+    for activity in activity_list:
+        try:
+            query = f"site:maps.google.com {activity}"
+            raw_response = serper_tool.func(query)
+            if "https://maps.google.com" in raw_response:
+                link_start = raw_response.find("https://maps.google.com")
+                link_end = raw_response.find(" ", link_start)
+                link = raw_response[link_start:link_end].strip()
+            else:
+                link = "No link found"
+            activity_links.append({"activity": activity, "link": link})
+        except Exception as e:
+            activity_links.append({"activity": activity, "link": f"Error: {e}"})
+    return activity_links
+
 # Function to generate a detailed itinerary using ChatGPT
 def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget):
     try:
         prompt_template = """
         You are a travel assistant. Create a detailed itinerary for a trip from {origin} to {destination}. 
         The user is interested in {interests}. The budget level is {budget}. 
-        The travel dates are {travel_dates}. For each activity, include the expected expense in both local currency 
-        and USD. Provide a total expense at the end.
+        The travel dates are {travel_dates}. List activities for each day without links.
         """
         prompt = prompt_template.format(
             origin=origin,
@@ -80,7 +97,20 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}]
         )
-        return response.choices[0].message["content"]
+        itinerary = response.choices[0].message["content"]
+
+        # Extract activities from the response
+        activity_list = [line.split(". ")[-1] for line in itinerary.split("\n") if line.strip().startswith("•")]
+
+        # Fetch Google Maps links
+        activity_links = fetch_google_maps_links(activity_list)
+
+        # Append links to the itinerary
+        itinerary_with_links = ""
+        for item in activity_links:
+            itinerary_with_links += f"• {item['activity']}\n  Google Maps: {item['link']}\n"
+
+        return itinerary_with_links
     except Exception as e:
         return f"An error occurred while generating the itinerary: {e}"
 
@@ -155,10 +185,11 @@ if st.session_state.branch == "Pre-travel":
                 st.session_state.budget
             )
 
-            with st.expander("Flight Prices", expanded=True):
-                st.write(flight_prices)
-            with st.expander("Itinerary", expanded=True):
-                st.write(itinerary)
+            st.subheader("Flight Prices")
+            st.write(flight_prices)
+
+            st.subheader("Itinerary with Google Maps Links")
+            st.write(itinerary)
 
 # Post-travel Branch
 if st.session_state.branch == "Post-travel":
