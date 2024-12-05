@@ -54,12 +54,13 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
         The user is interested in {interests}. The budget level is {budget}. 
         The travel dates are {travel_dates}. List activities for each day without links.
         """
+        travel_dates_str = f"{travel_dates[0]} to {travel_dates[1]}" if len(travel_dates) == 2 else "unspecified dates"
         prompt = prompt_template.format(
             origin=origin,
             destination=destination,
             interests=", ".join(interests) if interests else "general activities",
             budget=budget,
-            travel_dates=travel_dates
+            travel_dates=travel_dates_str
         )
         response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
@@ -111,7 +112,7 @@ if st.session_state.branch == "Pre-travel":
     st.header("Plan Your Travel 🗺️")
     origin = st.text_input("Flying From (Origin Airport/City)")
     destination = st.text_input("Flying To (Destination Airport/City)")
-    travel_dates = st.date_input("Select your travel dates")
+    travel_dates = st.date_input("Select your travel date range", value=[], min_value=None, max_value=None, key="date_range", help="Pick a start and end date.")
     budget = st.selectbox(
         "Select your budget level",
         ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"]
@@ -122,8 +123,8 @@ if st.session_state.branch == "Pre-travel":
     )
 
     if st.button("Generate Travel Itinerary"):
-        if not origin or not destination or not travel_dates:
-            st.error("Please fill in all required fields (origin, destination, and travel dates).")
+        if not origin or not destination or len(travel_dates) != 2:
+            st.error("Please fill in all required fields (origin, destination, and a valid date range).")
         else:
             # Generate itinerary
             itinerary = generate_itinerary_with_chatgpt(
