@@ -21,8 +21,7 @@ import openai
 import streamlit as st
 
 # Load API keys
-my_secret_key = st.secrets['IS883-OpenAIKey-RV']
-openai.api_key = my_secret_key
+os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
 os.environ["SERPER_API_KEY"] = st.secrets["SerperAPIKey"]
 
 # Function to generate Google Maps link
@@ -118,7 +117,6 @@ def create_pdf(itinerary, flight_prices):
     pdf.drawString(72, height - 100, "Itinerary:")
     pdf.setFont("Helvetica", 12)
     text = pdf.beginText(72, height - 120)
-    text.setFont("Helvetica", 12)
     for line in itinerary.splitlines():
         text.textLine(line)
     pdf.drawText(text)
@@ -126,7 +124,6 @@ def create_pdf(itinerary, flight_prices):
     # Flight Prices Section
     pdf.setFont("Helvetica-Bold", 14)
     pdf.drawString(72, height - 220, "Flight Prices:")
-    pdf.setFont("Helvetica", 12)
     text = pdf.beginText(72, height - 240)
     for line in flight_prices.splitlines():
         text.textLine(line)
@@ -143,6 +140,15 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Function to display content in cards
+def display_card(title, content):
+    return f"""
+    <div style="background-color:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; border:1px solid #ddd;">
+        <h4 style="color:#2980b9;">{title}</h4>
+        <p>{content}</p>
+    </div>
+    """
 
 # App Title
 st.title("🌍 Travel Planning Assistant")
@@ -168,12 +174,14 @@ if st.button("📝 Generate Travel Itinerary"):
 
         st.success("✅ Your travel details are ready!")
 
-        # Display itinerary and flight prices
-        st.subheader("🗺️ Itinerary")
-        st.write(itinerary)
+        # Create two columns
+        col1, col2 = st.columns(2)
 
-        st.subheader("✈️ Flight Prices")
-        st.write(flight_prices)
+        with col1:
+            st.markdown(display_card("Itinerary", itinerary), unsafe_allow_html=True)
+
+        with col2:
+            st.markdown(display_card("Flight Prices", flight_prices), unsafe_allow_html=True)
 
         # Display map links directly on the main page
         st.subheader("📍 Places to Visit with Map Links")
