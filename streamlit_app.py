@@ -18,8 +18,8 @@ import streamlit as st
 import pandas as pd
 
 # Load API keys
-#os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
-#os.environ["SERPER_API_KEY"] = st.secrets["SerperAPIKey"]
+os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
+os.environ["SERPER_API_KEY"] = st.secrets["SerperAPIKey"]
 
 # Initialize the Google Serper API Wrapper
 search = GoogleSerperAPIWrapper()
@@ -66,9 +66,16 @@ def fetch_google_maps_links(activity_list):
     activity_links = []
     for activity in activity_list:
         try:
-            query = f"Google Maps link for {activity}"
+            query = f"site:maps.google.com {activity}"
             raw_response = serper_tool.func(query)
-            activity_links.append({"activity": activity, "link": raw_response})
+            # Simplify the parsing logic to extract the first link (if available)
+            if "https://maps.google.com" in raw_response:
+                link_start = raw_response.find("https://maps.google.com")
+                link_end = raw_response.find(" ", link_start)
+                link = raw_response[link_start:link_end].strip()
+            else:
+                link = "No link found"
+            activity_links.append({"activity": activity, "link": link})
         except Exception as e:
             activity_links.append({"activity": activity, "link": f"Error: {e}"})
     return activity_links
@@ -97,6 +104,9 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
 
         # Extract activities from the response
         activity_list = [line.split(". ")[-1] for line in itinerary.split("\n") if line.strip().startswith("•")]
+
+        if not activity_list:
+            return "No activities could be extracted from the generated itinerary."
 
         # Fetch Google Maps links
         activity_links = fetch_google_maps_links(activity_list)
@@ -181,10 +191,11 @@ if st.session_state.branch == "Pre-travel":
                 st.session_state.budget
             )
 
-            with st.expander("Flight Prices", expanded=True):
-                st.write(flight_prices)
-            with st.expander("Itinerary (with Maps Links)", expanded=True):
-                st.write(itinerary)
+            st.subheader("Flight Prices")
+            st.write(flight_prices)
+
+            st.subheader("Itinerary (with Maps Links)")
+            st.write(itinerary)
 
 # Post-travel Branch
 if st.session_state.branch == "Post-travel":
