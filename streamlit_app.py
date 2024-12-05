@@ -218,6 +218,6 @@ if st.button("📝 Generate Travel Itinerary"):
                     place_name = extract_place_name(activity)
                     if place_name:  # Only generate links for valid place names
                         maps_link = generate_maps_link(place_name, destination)
-                        st.markdown(f"- **{place_name}**: [View on Google Maps]({maps_link})")
+                        st.markdown(f"- **{place_name}**: [View on Google Maps]({maps_link})", unsafe_allow_html=True)
             else:
                 st.write("No activities could be identified from the itinerary.")
