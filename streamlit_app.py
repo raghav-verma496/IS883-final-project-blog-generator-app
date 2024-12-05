@@ -210,7 +210,7 @@ if st.button("📝 Generate Travel Itinerary"):
             activities = [
                 line.split(":")[1].strip() 
                 for line in itinerary.split("\n") 
-                if "Activity" in line
+                if ":" in line and "Activity" in line
             ]
             st.subheader("Places to Visit with Map Links:")
             if activities:
