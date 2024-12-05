@@ -181,9 +181,7 @@ if st.button("📝 Generate Travel Itinerary"):
         with st.spinner("Fetching flight details and generating itinerary..."):
             # Fetch flight prices
             flight_prices = fetch_flight_prices(
-                origin,
-                destination,
-                travel_dates[0].strftime("%Y-%m-%d")
+                origin, destination, travel_dates[0].strftime("%Y-%m-%d")
             )
 
             # Generate itinerary
@@ -196,7 +194,7 @@ if st.button("📝 Generate Travel Itinerary"):
         
         # Collapsible boxes for outputs
         with st.expander("📋 Itinerary", expanded=False):
-            st.markdown("### Trip Itinerary")
+            st.markdown("### Itinerary for Boston to Delhi")
             st.write("**Travel Dates:** December 9 - December 15, 2024")
             st.write("**Exchange Rate:** 1 USD = 83 INR")
             
