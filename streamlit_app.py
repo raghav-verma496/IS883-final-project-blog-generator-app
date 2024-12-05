@@ -15,12 +15,10 @@ from langchain_core.tools import Tool
 from langchain_community.utilities import GoogleSerperAPIWrapper
 import openai
 import streamlit as st
-import re
-import urllib.parse
 
 # Load API keys
+os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
 os.environ["SERPER_API_KEY"] = st.secrets["SerperAPIKey"]
-os.environ["OPENAI_API_KEY"] = st.secrets["IS883-OpenAIKey-RV"]
 
 # Initialize the Google Serper API Wrapper
 search = GoogleSerperAPIWrapper()
@@ -30,21 +28,37 @@ serper_tool = Tool(
     description="Useful for when you need to look up some information on the internet.",
 )
 
-# Function to generate Google Maps link
-def generate_maps_link(place_name):
-    base_url = "https://www.google.com/maps/search/?api=1&query="
-    return base_url + urllib.parse.quote(place_name)
+# Function to query ChatGPT for better formatting
+def format_flight_prices_with_chatgpt(raw_response, origin, destination, departure_date):
+    try:
+        prompt = f"""
+        You are a helpful assistant. I received the following raw flight information for a query:
+        'Flights from {origin} to {destination} on {departure_date}':
+        {raw_response}
 
-# Function to extract activities with place names from the itinerary
-def extract_activities_with_map_links(itinerary_text):
-    # Match "Activity Name:" and extract the activity names
-    activity_pattern = re.compile(r"Activity Name: (.*?)\n", re.DOTALL)
-    activities = activity_pattern.findall(itinerary_text)
-    activity_links = [
-        {"activity": activity.strip(), "link": generate_maps_link(activity.strip())}
-        for activity in activities
-    ]
-    return activity_links
+        Please clean and reformat this information into a professional, readable format. Use bullet points,
+        categories, or a table wherever appropriate to make it easy to understand. Also include key highlights
+        like the cheapest fare, airlines, and travel dates. Ensure that any missing or irrelevant text is ignored.
+        """
+        response = openai.ChatCompletion.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message["content"]
+    except Exception as e:
+        return f"An error occurred while formatting the response: {e}"
+
+# Function to fetch flight prices and format them with ChatGPT
+def fetch_flight_prices(origin, destination, departure_date):
+    try:
+        query = f"flights from {origin} to {destination} on {departure_date}"
+        raw_response = serper_tool.func(query)
+        formatted_response = format_flight_prices_with_chatgpt(
+            raw_response, origin, destination, departure_date
+        )
+        return formatted_response
+    except Exception as e:
+        return f"An error occurred while fetching or formatting flight prices: {e}"
 
 # Function to generate a detailed itinerary using ChatGPT
 def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget):
@@ -52,11 +66,8 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
         prompt_template = """
         You are a travel assistant. Create a detailed itinerary for a trip from {origin} to {destination}. 
         The user is interested in {interests}. The budget level is {budget}. 
-        The travel dates are {travel_dates}. For each activity, include:
-        - Activity name
-        - Description
-        - City and country
-        - Latitude and Longitude (if possible)
+        The travel dates are {travel_dates}. For each activity, include the expected expense in both local currency 
+        and USD. Provide a total expense at the end.
         """
         prompt = prompt_template.format(
             origin=origin,
@@ -100,41 +111,63 @@ if branch == "Plan Your Travel":
         ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"]
     )
 
-    # Initialize session state for interests
+    # Initialize session state for interests and destination interests
     if "interests" not in st.session_state:
         st.session_state.interests = []
+    if "destination_interests" not in st.session_state:
+        st.session_state.destination_interests = []
 
-    # Collect Interests
     if st.button("Set Interests"):
+        # Validate that required inputs are provided before proceeding
         if not origin or not destination or not travel_dates:
-            st.error("Please fill in all required fields to proceed.")
+            st.error("Please fill in all required fields (origin, destination, and travel dates) to proceed.")
         else:
-            st.session_state.interests = st.multiselect(
-                "Select your interests",
-                ["Cultural Sites", "Local Food", "Museums", "Shopping", "Parks", "Nightlife", "Other"],
-                default=st.session_state.interests
-            )
+            # Generate dynamic interests list based on destination
+            destination_interests = {
+                "New York": ["Statue of Liberty", "Central Park", "Broadway Shows", "Times Square", "Brooklyn Bridge",
+                             "Museum of Modern Art", "Empire State Building", "High Line", "Fifth Avenue", "Rockefeller Center"],
+                "Paris": ["Eiffel Tower", "Louvre Museum", "Notre-Dame Cathedral", "Champs-Élysées", "Montmartre",
+                          "Versailles", "Seine River Cruise", "Disneyland Paris", "Arc de Triomphe", "Latin Quarter"],
+                "Tokyo": ["Shinjuku Gyoen", "Tokyo Tower", "Akihabara", "Meiji Shrine", "Senso-ji Temple",
+                          "Odaiba", "Ginza", "Tsukiji Market", "Harajuku", "Roppongi"],
+            }
+            top_interests = destination_interests.get(destination.title(), ["Beach", "Hiking", "Museums", "Local Food",
+                                                                            "Shopping", "Parks", "Cultural Sites", 
+                                                                            "Water Sports", "Music Events", "Nightlife"])
+            
+            # Update session state with generated interests list
+            st.session_state.destination_interests = top_interests
 
-    # Generate Itinerary and Map Links
-    if st.button("Generate Travel Itinerary"):
-        if not st.session_state.interests:
-            st.error("Please select at least one interest.")
-        else:
-            # Generate itinerary
-            itinerary = generate_itinerary_with_chatgpt(
-                origin, destination, travel_dates, st.session_state.interests, budget
-            )
-            st.subheader("Generated Itinerary:")
-            st.write(itinerary)
+    # Display the dynamic interest selection list
+    if st.session_state.destination_interests:
+        st.session_state.interests = st.multiselect(
+            "Select your interests",
+            st.session_state.destination_interests + ["Other"],
+            default=st.session_state.interests
+        )
 
-            # Extract activities and generate map links
-            activities_with_links = extract_activities_with_map_links(itinerary)
-            if activities_with_links:
-                st.subheader("Places to Visit with Map Links:")
-                for item in activities_with_links:
-                    st.markdown(f"- **{item['activity']}**: [View on Google Maps]({item['link']})")
-            else:
-                st.write("No activities could be identified from the itinerary.")
+    # Step 2: Final button to generate itinerary
+    if st.session_state.interests and st.button("Generate Travel Itinerary"):
+        interests = st.session_state.get("interests", [])
+        if "Other" in interests:
+            custom_interest = st.text_input("Enter your custom interest(s)")
+            if custom_interest:
+                interests.append(custom_interest)
+
+        # Fetch flight prices
+        flight_prices = fetch_flight_prices(origin, destination, travel_dates[0].strftime("%Y-%m-%d"))
+
+        # Generate itinerary
+        itinerary = generate_itinerary_with_chatgpt(
+            origin, destination, travel_dates, interests, budget
+        )
+
+        # Display results
+        st.subheader("Estimated Flight Prices:")
+        st.write(flight_prices)
+
+        st.subheader("Generated Itinerary:")
+        st.write(itinerary)
 
 # Post-travel Branch
 elif branch == "Post-travel":
