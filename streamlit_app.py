@@ -16,11 +16,10 @@ from langchain_community.utilities import GoogleSerperAPIWrapper
 import openai
 import streamlit as st
 import pandas as pd
-from PIL import Image
 
 # Load API keys
-os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
-os.environ["SERPER_API_KEY"] = st.secrets["SerperAPIKey"]
+#os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
+#os.environ["SERPER_API_KEY"] = st.secrets["SerperAPIKey"]
 
 # Initialize the Google Serper API Wrapper
 search = GoogleSerperAPIWrapper()
@@ -62,14 +61,26 @@ def fetch_flight_prices(origin, destination, departure_date):
     except Exception as e:
         return f"An error occurred while fetching or formatting flight prices: {e}"
 
-# Function to generate a detailed itinerary using ChatGPT
+# Function to fetch Google Maps links for itinerary activities
+def fetch_google_maps_links(activity_list):
+    activity_links = []
+    for activity in activity_list:
+        try:
+            query = f"Google Maps link for {activity}"
+            raw_response = serper_tool.func(query)
+            activity_links.append({"activity": activity, "link": raw_response})
+        except Exception as e:
+            activity_links.append({"activity": activity, "link": f"Error: {e}"})
+    return activity_links
+
+# Function to generate itinerary with integrated Google Maps links
 def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget):
     try:
+        # Prompt for itinerary
         prompt_template = """
         You are a travel assistant. Create a detailed itinerary for a trip from {origin} to {destination}. 
         The user is interested in {interests}. The budget level is {budget}. 
-        The travel dates are {travel_dates}. For each activity, include the expected expense in both local currency 
-        and USD. Provide a total expense at the end.
+        The travel dates are {travel_dates}. List activities for each day without links.
         """
         prompt = prompt_template.format(
             origin=origin,
@@ -82,37 +93,22 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}]
         )
-        return response.choices[0].message["content"]
+        itinerary = response.choices[0].message["content"]
+
+        # Extract activities from the response
+        activity_list = [line.split(". ")[-1] for line in itinerary.split("\n") if line.strip().startswith("•")]
+
+        # Fetch Google Maps links
+        activity_links = fetch_google_maps_links(activity_list)
+
+        # Append links to the itinerary
+        itinerary_with_links = ""
+        for item in activity_links:
+            itinerary_with_links += f"• {item['activity']}\n  Google Maps: {item['link']}\n"
+
+        return itinerary_with_links
     except Exception as e:
         return f"An error occurred while generating the itinerary: {e}"
-
-# Function to fetch Google Maps link for an activity
-def fetch_google_maps_link(activity_name, location):
-    try:
-        query = f"Google Maps link for {activity_name} in {location}"
-        raw_response = serper_tool.func(query)
-        
-        # Extract and return the first link from the raw response
-        maps_link = raw_response.get("organic_results", [{}])[0].get("link", "No link found")
-        return maps_link
-    except Exception as e:
-        return f"An error occurred while fetching the Google Maps link: {e}"
-
-# Function to integrate Google Maps links into the itinerary
-def add_google_maps_links_to_itinerary(itinerary, location):
-    try:
-        # Split the itinerary into activities
-        activities = [line for line in itinerary.split("\n") if line.strip()]
-        
-        # Append Google Maps links for each activity
-        updated_itinerary = []
-        for activity in activities:
-            maps_link = fetch_google_maps_link(activity, location)
-            updated_itinerary.append(f"{activity} - [Google Maps Link]({maps_link})")
-        
-        return "\n".join(updated_itinerary)
-    except Exception as e:
-        return f"An error occurred while adding Google Maps links: {e}"
 
 # Streamlit UI configuration
 st.set_page_config(
@@ -124,100 +120,77 @@ st.set_page_config(
 
 st.header("Travel Planning Assistant 🛫")
 
-# Sidebar Navigation
-st.sidebar.title("Navigation")
-branch = st.sidebar.radio("Select a branch", ["Plan Your Travel", "Post-travel", "OCR Receipts"])
+# Initialize session state variables
+if "branch" not in st.session_state:
+    st.session_state.branch = None
+if "origin" not in st.session_state:
+    st.session_state.origin = ""
+if "destination" not in st.session_state:
+    st.session_state.destination = ""
+if "travel_dates" not in st.session_state:
+    st.session_state.travel_dates = []
+if "budget" not in st.session_state:
+    st.session_state.budget = ""
+if "interests" not in st.session_state:
+    st.session_state.interests = []
 
-# Plan Your Travel Branch
-if branch == "Plan Your Travel":
+# Homepage Navigation
+if st.session_state.branch is None:
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Pre-travel"):
+            st.session_state.branch = "Pre-travel"
+    with col2:
+        if st.button("Post-travel"):
+            st.session_state.branch = "Post-travel"
+
+# Pre-travel Branch
+if st.session_state.branch == "Pre-travel":
     st.header("Plan Your Travel 🗺️")
-
-    # Step 1: Collect basic trip details
-    origin = st.text_input("Flying From (Origin Airport/City)")
-    destination = st.text_input("Flying To (Destination Airport/City)")
-    travel_dates = st.date_input("Select your travel dates", [])
-    budget = st.selectbox(
+    st.session_state.origin = st.text_input("Flying From (Origin Airport/City)", value=st.session_state.origin)
+    st.session_state.destination = st.text_input("Flying To (Destination Airport/City)", value=st.session_state.destination)
+    st.session_state.travel_dates = st.date_input("Select your travel dates", value=st.session_state.travel_dates)
+    st.session_state.budget = st.selectbox(
         "Select your budget level",
-        ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"]
+        ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"],
+        index=["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"].index(st.session_state.budget)
+        if st.session_state.budget else 0
     )
 
-    # Initialize session state for interests and destination interests
-    if "interests" not in st.session_state:
-        st.session_state.interests = []
-    if "destination_interests" not in st.session_state:
-        st.session_state.destination_interests = []
+    interests = st.multiselect(
+        "Select your interests",
+        ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", "Nightlife"],
+        default=st.session_state.interests
+    )
+    st.session_state.interests = interests
 
-    if st.button("Set Interests"):
-        # Validate that required inputs are provided before proceeding
-        if not origin or not destination or not travel_dates:
-            st.error("Please fill in all required fields (origin, destination, and travel dates) to proceed.")
+    if st.button("Generate Travel Itinerary"):
+        if not st.session_state.origin or not st.session_state.destination or not st.session_state.travel_dates:
+            st.error("Please fill in all required fields (origin, destination, and travel dates).")
         else:
-            # Generate dynamic interests list based on destination
-            destination_interests = {
-                "New York": ["Statue of Liberty", "Central Park", "Broadway Shows", "Times Square", "Brooklyn Bridge",
-                             "Museum of Modern Art", "Empire State Building", "High Line", "Fifth Avenue", "Rockefeller Center"],
-                "Paris": ["Eiffel Tower", "Louvre Museum", "Notre-Dame Cathedral", "Champs-Élysées", "Montmartre",
-                          "Versailles", "Seine River Cruise", "Disneyland Paris", "Arc de Triomphe", "Latin Quarter"],
-                "Tokyo": ["Shinjuku Gyoen", "Tokyo Tower", "Akihabara", "Meiji Shrine", "Senso-ji Temple",
-                          "Odaiba", "Ginza", "Tsukiji Market", "Harajuku", "Roppongi"],
-            }
-            top_interests = destination_interests.get(destination.title(), ["Beach", "Hiking", "Museums", "Local Food",
-                                                                            "Shopping", "Parks", "Cultural Sites", 
-                                                                            "Water Sports", "Music Events", "Nightlife"])
-            
-            # Update session state with generated interests list
-            st.session_state.destination_interests = top_interests
+            flight_prices = fetch_flight_prices(
+                st.session_state.origin,
+                st.session_state.destination,
+                st.session_state.travel_dates[0].strftime("%Y-%m-%d")
+            )
+            itinerary = generate_itinerary_with_chatgpt(
+                st.session_state.origin,
+                st.session_state.destination,
+                st.session_state.travel_dates,
+                st.session_state.interests,
+                st.session_state.budget
+            )
 
-    # Display the dynamic interest selection list
-    if st.session_state.destination_interests:
-        st.session_state.interests = st.multiselect(
-            "Select your interests",
-            st.session_state.destination_interests + ["Other"],
-            default=st.session_state.interests
-        )
-
-    # Step 2: Final button to generate itinerary
-    if st.session_state.interests and st.button("Generate Travel Itinerary with Maps Links"):
-        interests = st.session_state.get("interests", [])
-        if "Other" in interests:
-            custom_interest = st.text_input("Enter your custom interest(s)")
-            if custom_interest:
-                interests.append(custom_interest)
-
-        # Fetch flight prices
-        flight_prices = fetch_flight_prices(origin, destination, travel_dates[0].strftime("%Y-%m-%d"))
-
-        # Generate itinerary
-        raw_itinerary = generate_itinerary_with_chatgpt(
-            origin, destination, travel_dates, interests, budget
-        )
-
-        # Add Google Maps links
-        itinerary_with_links = add_google_maps_links_to_itinerary(raw_itinerary, destination)
-
-        # Display results
-        st.subheader("Estimated Flight Prices:")
-        st.write(flight_prices)
-
-        st.subheader("Generated Itinerary with Maps Links:")
-        st.write(itinerary_with_links)
+            with st.expander("Flight Prices", expanded=True):
+                st.write(flight_prices)
+            with st.expander("Itinerary (with Maps Links)", expanded=True):
+                st.write(itinerary)
 
 # Post-travel Branch
-elif branch == "Post-travel":
+if st.session_state.branch == "Post-travel":
     st.header("Post-travel: Data Classification and Summary")
     uploaded_file = st.file_uploader("Upload your travel data (Excel file)", type=["xlsx"])
     if uploaded_file is not None:
         df = pd.read_excel(uploaded_file)
         st.subheader("Data Preview:")
         st.write(df.head())
-
-# OCR Receipts Branch
-elif branch == "OCR Receipts":
-    st.header("OCR Receipts: Extract Data from Receipts")
-    uploaded_receipt = st.file_uploader("Upload your receipt image (PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"])
-    if uploaded_receipt:
-        receipt_image = Image.open(uploaded_receipt)
-        receipt_data = preprocess_and_extract(receipt_image)
-        if receipt_data:
-            st.subheader("Extracted Data:")
-            st.write(receipt_data)
