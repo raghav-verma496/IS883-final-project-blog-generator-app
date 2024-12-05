@@ -26,6 +26,15 @@ def generate_maps_link(place_name):
     base_url = "https://www.google.com/maps/search/?api=1&query="
     return base_url + urllib.parse.quote(place_name)
 
+# Function to clean and extract valid place names
+def extract_place_name(activity_line):
+    # Remove action words like "Visit", "Explore", "Rest and get acclimatized", etc.
+    prefixes_to_remove = ["Visit", "Explore", "Rest", "Last-minute Shopping in"]
+    for prefix in prefixes_to_remove:
+        if activity_line.startswith(prefix):
+            activity_line = activity_line.replace(prefix, "").strip()
+    return activity_line
+
 # Initialize the Google Serper API Wrapper
 search = GoogleSerperAPIWrapper()
 serper_tool = Tool(
@@ -33,38 +42,6 @@ serper_tool = Tool(
     func=search.run,
     description="Useful for when you need to look up some information on the internet.",
 )
-
-# Function to query ChatGPT for better formatting
-def format_flight_prices_with_chatgpt(raw_response, origin, destination, departure_date):
-    try:
-        prompt = f"""
-        You are a helpful assistant. I received the following raw flight information for a query:
-        'Flights from {origin} to {destination} on {departure_date}':
-        {raw_response}
-
-        Please clean and reformat this information into a professional, readable format. Use bullet points,
-        categories, or a table wherever appropriate to make it easy to understand. Also include key highlights
-        like the cheapest fare, airlines, and travel dates. Ensure that any missing or irrelevant text is ignored.
-        """
-        response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message["content"]
-    except Exception as e:
-        return f"An error occurred while formatting the response: {e}"
-
-# Function to fetch flight prices and format them with ChatGPT
-def fetch_flight_prices(origin, destination, departure_date):
-    try:
-        query = f"flights from {origin} to {destination} on {departure_date}"
-        raw_response = serper_tool.func(query)
-        formatted_response = format_flight_prices_with_chatgpt(
-            raw_response, origin, destination, departure_date
-        )
-        return formatted_response
-    except Exception as e:
-        return f"An error occurred while fetching or formatting flight prices: {e}"
 
 # Function to generate a detailed itinerary using ChatGPT
 def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget):
@@ -96,39 +73,6 @@ st.set_page_config(
     page_icon="🛫",
     layout="wide",
     initial_sidebar_state="expanded"
-)
-
-# Add custom CSS styling
-st.markdown(
-    """
-    <style>
-    h1, h2, h3 {
-        color: #2c3e50;
-        font-family: 'Arial', sans-serif;
-    }
-    .st-expander {
-        background-color: #f9f9f9;
-        border-radius: 10px;
-        border: 1px solid #ddd;
-        padding: 10px;
-    }
-    .st-expander-header {
-        font-weight: bold;
-        color: #2980b9;
-    }
-    .stButton>button {
-        background-color: #2980b9;
-        color: white;
-        font-size: 16px;
-        border-radius: 5px;
-        padding: 10px 15px;
-    }
-    .stButton>button:hover {
-        background-color: #1c598a;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
 )
 
 # App Title
@@ -180,13 +124,9 @@ if st.button("📝 Generate Travel Itinerary"):
         st.error("⚠️ Please provide all required details: origin, destination, and a valid travel date range.")
     else:
         with st.spinner("Fetching details..."):
-            flight_prices = fetch_flight_prices(origin, destination, travel_dates[0].strftime("%Y-%m-%d"))
             itinerary = generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget)
 
         st.success("✅ Your travel details are ready!")
-        with st.expander("✈️ Flight Prices", expanded=False):
-            st.write(flight_prices)
-
         with st.expander("📋 Itinerary", expanded=False):
             st.subheader("Generated Itinerary:")
             st.write(itinerary)
@@ -200,7 +140,9 @@ if st.button("📝 Generate Travel Itinerary"):
             st.subheader("Places to Visit with Map Links:")
             if activities:
                 for activity in activities:
-                    maps_link = generate_maps_link(activity)
-                    st.markdown(f"- **{activity}**: [View on Google Maps]({maps_link})")
+                    place_name = extract_place_name(activity)
+                    if place_name:  # Only generate links for valid place names
+                        maps_link = generate_maps_link(place_name)
+                        st.markdown(f"- **{place_name}**: [View on Google Maps]({maps_link})")
             else:
                 st.write("No activities could be identified from the itinerary.")
