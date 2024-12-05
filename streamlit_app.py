@@ -35,6 +35,7 @@ def fetch_google_maps_links(activity_list):
         try:
             query = f"site:maps.google.com {activity}"
             raw_response = serper_tool.func(query)
+            st.write(f"Debug: Google Serper raw response for '{activity}': {raw_response}")
             if "https://maps.google.com" in raw_response:
                 link_start = raw_response.find("https://maps.google.com")
                 link_end = raw_response.find(" ", link_start)
@@ -66,13 +67,16 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}]
         )
+        st.write(f"Debug: ChatGPT raw response: {response}")
         itinerary = response.choices[0].message["content"]
 
         # Extract activities from the response
         activity_list = [line.split(". ")[-1] for line in itinerary.split("\n") if line.strip().startswith("•")]
+        st.write(f"Debug: Extracted activities: {activity_list}")
 
         # Fetch Google Maps links
         activity_links = fetch_google_maps_links(activity_list)
+        st.write(f"Debug: Fetched Google Maps links: {activity_links}")
 
         # Append links to the itinerary
         itinerary_with_links = ""
@@ -112,7 +116,7 @@ if st.session_state.branch == "Pre-travel":
     st.header("Plan Your Travel 🗺️")
     origin = st.text_input("Flying From (Origin Airport/City)")
     destination = st.text_input("Flying To (Destination Airport/City)")
-    travel_dates = st.date_input("Select your travel date range", value=[], min_value=None, max_value=None, key="date_range", help="Pick a start and end date.")
+    travel_dates = st.date_input("Select your travel date range", value=[], key="date_range")
     budget = st.selectbox(
         "Select your budget level",
         ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"]
