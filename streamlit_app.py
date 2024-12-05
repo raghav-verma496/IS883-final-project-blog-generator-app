@@ -12,6 +12,9 @@
 
 import os
 import urllib.parse
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 from langchain_core.tools import Tool
 from langchain_community.utilities import GoogleSerperAPIWrapper
 import openai
@@ -23,18 +26,12 @@ os.environ["SERPER_API_KEY"] = st.secrets["SerperAPIKey"]
 
 # Function to generate Google Maps link
 def generate_maps_link(place_name, city_name):
-    """
-    Generate a Google Maps link specifically for a place in the given city.
-    """
     base_url = "https://www.google.com/maps/search/?api=1&query="
     full_query = f"{place_name}, {city_name}"
     return base_url + urllib.parse.quote(full_query)
 
 # Function to clean and extract valid place names
 def extract_place_name(activity_line):
-    """
-    Extract only the name of the place or location by removing prefixes or non-place text.
-    """
     prefixes_to_remove = ["Visit", "Explore", "Rest", "the", "Last-minute Shopping in"]
     for prefix in prefixes_to_remove:
         if activity_line.lower().startswith(prefix.lower()):
@@ -105,6 +102,32 @@ def generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests
     except Exception as e:
         return f"An error occurred while generating the itinerary: {e}"
 
+# Function to create a PDF from itinerary and flight prices
+def create_pdf(itinerary, flight_prices):
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+
+    # Title
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(72, height - 72, "Travel Itinerary")
+
+    # Itinerary Section
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(72, height - 100, "Itinerary:")
+    pdf.setFont("Helvetica", 12)
+    pdf.drawString(72, height - 120, itinerary)
+
+    # Flight Prices Section
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(72, height - 160, "Flight Prices:")
+    pdf.setFont("Helvetica", 12)
+    pdf.drawString(72, height - 180, flight_prices)
+
+    pdf.save()
+    buffer.seek(0)
+    return buffer
+
 # Streamlit UI configuration
 st.set_page_config(
     page_title="Travel Planning Assistant",
@@ -146,18 +169,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Function to display content in cards
-def display_card(title, content):
-    """
-    Display content inside a styled card.
-    """
-    return f"""
-    <div style="background-color:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; border:1px solid #ddd;">
-        <h4 style="color:#2980b9;">{title}</h4>
-        <p>{content}</p>
-    </div>
-    """
-
 # App Title
 st.title("🌍 Travel Planning Assistant")
 st.write("Plan your perfect trip with personalized itineraries and flight suggestions!")
@@ -182,32 +193,34 @@ if st.button("📝 Generate Travel Itinerary"):
 
         st.success("✅ Your travel details are ready!")
 
-        # Create two columns
-        col1, col2 = st.columns(2)
+        # Display itinerary and flight prices
+        st.subheader("🗺️ Itinerary")
+        st.write(itinerary)
 
-        with col1:
-            st.subheader("🗺️ Itinerary")
-            if itinerary:
-                st.markdown(display_card("Itinerary", itinerary), unsafe_allow_html=True)
-
-        with col2:
-            st.subheader("✈️ Flight Prices")
-            if flight_prices:
-                st.markdown(display_card("Flight Prices", flight_prices), unsafe_allow_html=True)
+        st.subheader("✈️ Flight Prices")
+        st.write(flight_prices)
 
         # Display map links directly on the main page
         st.subheader("📍 Places to Visit with Map Links")
-        if itinerary:
-            activities = [
-                line.split(":")[1].strip() 
-                for line in itinerary.split("\n") 
-                if ":" in line and "Activity" in line
-            ]
-            if activities:
-                for activity in activities:
-                    place_name = extract_place_name(activity)
-                    if place_name:
-                        maps_link = generate_maps_link(place_name, destination)
-                        st.markdown(f"- **{place_name}**: [View on Google Maps]({maps_link})")
-            else:
-                st.write("No activities could be identified.")
+        activities = [
+            line.split(":")[1].strip() 
+            for line in itinerary.split("\n") 
+            if ":" in line and "Activity" in line
+        ]
+        if activities:
+            for activity in activities:
+                place_name = extract_place_name(activity)
+                if place_name:
+                    maps_link = generate_maps_link(place_name, destination)
+                    st.markdown(f"- **{place_name}**: [View on Google Maps]({maps_link})")
+        else:
+            st.write("No activities could be identified.")
+
+        # Generate and provide download link for PDF
+        pdf_buffer = create_pdf(itinerary, flight_prices)
+        st.download_button(
+            label="📥 Download Itinerary as PDF",
+            data=pdf_buffer,
+            file_name="travel_itinerary.pdf",
+            mime="application/pdf",
+        )
