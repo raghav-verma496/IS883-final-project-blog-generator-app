@@ -37,11 +37,11 @@ def generate_maps_link(place_name):
 
 # Function to extract activities with place names from the itinerary
 def extract_activities_with_map_links(itinerary_text):
-    # Match "Activity:" and extract the activity names
+    # Match "Activity Name:" and extract the activity names
     activity_pattern = re.compile(r"Activity Name: (.*?)\n", re.DOTALL)
     activities = activity_pattern.findall(itinerary_text)
     activity_links = [
-        {"activity": activity, "link": generate_maps_link(activity)}
+        {"activity": activity.strip(), "link": generate_maps_link(activity.strip())}
         for activity in activities
     ]
     return activity_links
@@ -100,40 +100,22 @@ if branch == "Plan Your Travel":
         ["Low (up to $5,000)", "Medium ($5,000 to $10,000)", "High ($10,000+)"]
     )
 
-    # Initialize session state for interests and destination interests
-    if "destination_interests" not in st.session_state:
-        st.session_state.destination_interests = []
+    # Initialize session state for interests
     if "interests" not in st.session_state:
         st.session_state.interests = []
 
-    # Set Interests Button
+    # Collect Interests
     if st.button("Set Interests"):
         if not origin or not destination or not travel_dates:
             st.error("Please fill in all required fields to proceed.")
         else:
-            # Dynamic interests based on destination
-            destination_interests = {
-                "New York": ["Statue of Liberty", "Central Park", "Broadway Shows", "Times Square", "Brooklyn Bridge",
-                             "Museum of Modern Art", "Empire State Building", "High Line", "Fifth Avenue", "Rockefeller Center"],
-                "Paris": ["Eiffel Tower", "Louvre Museum", "Notre-Dame Cathedral", "Champs-Élysées", "Montmartre",
-                          "Versailles", "Seine River Cruise", "Disneyland Paris", "Arc de Triomphe", "Latin Quarter"],
-                "Tokyo": ["Shinjuku Gyoen", "Tokyo Tower", "Akihabara", "Meiji Shrine", "Senso-ji Temple",
-                          "Odaiba", "Ginza", "Tsukiji Market", "Harajuku", "Roppongi"],
-            }
-            st.session_state.destination_interests = destination_interests.get(
-                destination.title(), ["Beach", "Hiking", "Museums", "Local Food", "Shopping", "Parks", "Cultural Sites", 
-                                      "Water Sports", "Music Events", "Nightlife"]
+            st.session_state.interests = st.multiselect(
+                "Select your interests",
+                ["Cultural Sites", "Local Food", "Museums", "Shopping", "Parks", "Nightlife", "Other"],
+                default=st.session_state.interests
             )
 
-    # Display the dynamic interest selection list
-    if st.session_state.destination_interests:
-        st.session_state.interests = st.multiselect(
-            "Select your interests",
-            st.session_state.destination_interests + ["Other"],
-            default=st.session_state.interests
-        )
-
-    # Step 3: Generate the itinerary and map links
+    # Generate Itinerary and Map Links
     if st.button("Generate Travel Itinerary"):
         if not st.session_state.interests:
             st.error("Please select at least one interest.")
