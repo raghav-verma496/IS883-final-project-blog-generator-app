@@ -36,9 +36,9 @@ def generate_maps_link_with_coordinates(lat, lon):
 
 # Function to extract activities, latitude, and longitude from the itinerary
 def extract_activities_with_coordinates(itinerary_text):
-    # Match activities with latitude and longitude
+    # Enhanced regex to match activities and coordinates
     activity_pattern = re.compile(
-        r"Activity Name: (.*?)\n.*?Latitude and Longitude: ([\d.\-]+)[° ]?[N|S]?,? ?([\d.\-]+)[° ]?[E|W]?",
+        r"Activity Name: (.*?)\n.*?Latitude and Longitude: ([\d.\-]+)[° ]?[N|S]?[;,]? ?([\d.\-]+)[° ]?[E|W]?",
         re.DOTALL
     )
     activities = []
@@ -49,6 +49,8 @@ def extract_activities_with_coordinates(itinerary_text):
             "latitude": lat.strip(),
             "longitude": lon.strip()
         })
+    if not activities:
+        st.warning("No activities with coordinates found. Check the itinerary format.")
     return activities
 
 # Function to generate a detailed itinerary using ChatGPT
