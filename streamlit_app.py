@@ -206,19 +206,18 @@ if st.button("📝 Generate Travel Itinerary"):
             if flight_prices:
                 st.markdown(display_card("Flight Prices", flight_prices), unsafe_allow_html=True)
 
-        # Display map links
-        if itinerary:
-            st.subheader("Places to Visit with Map Links:")
-            activities = [
-                line.split(":")[1].strip() 
-                for line in itinerary.split("\n") 
-                if ":" in line and "Activity" in line
-            ]
-            if activities:
-                for activity in activities:
-                    place_name = extract_place_name(activity)
-                    if place_name:
-                        maps_link = generate_maps_link(place_name, destination)
-                        st.markdown(f"- {place_name}: [View on Google Maps]({maps_link})")
-            else:
-                st.write("No activities could be identified from the itinerary.")
+            if itinerary:
+                # Extract activities and generate map links
+                activities = [
+                    line.split(":")[1].strip()
+                    for line in itinerary.split("\n")
+                    if ":" in line and "Activity" in line
+                ]
+                if activities:
+                    places_content = "\n".join(
+                        [f"- {extract_place_name(activity)}: [View on Google Maps]({generate_maps_link(extract_place_name(activity), destination)})"
+                         for activity in activities]
+                    )
+                    st.markdown(display_card("Places to Visit with Map Links", places_content), unsafe_allow_html=True)
+                else:
+                    st.markdown(display_card("Places to Visit with Map Links", "No activities could be identified."), unsafe_allow_html=True)
