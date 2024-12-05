@@ -200,9 +200,13 @@ if st.button("📝 Generate Travel Itinerary"):
         # Display Outputs
         st.success("✅ Your travel details are ready!")
         
-        # Collapsible boxes for results
-        with st.expander("💰 Flight Prices", expanded=False):
-            st.write(flight_prices)
+        # Use columns to display collapsible boxes side-by-side
+        col1, col2 = st.columns(2)
         
-        with st.expander("📋 Itinerary", expanded=False):
-            st.write(itinerary)
+        with col1:
+            with st.expander("💰 Flight Prices", expanded=False):
+                st.write(flight_prices)
+        
+        with col2:
+            with st.expander("📋 Itinerary", expanded=False):
+                st.write(itinerary)
