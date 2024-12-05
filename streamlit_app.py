@@ -96,26 +96,20 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Style for headers */
     h1, h2, h3 {
         color: #2c3e50;
         font-family: 'Arial', sans-serif;
     }
-    /* Style for collapsible boxes */
     .st-expander {
         background-color: #f9f9f9;
         border-radius: 10px;
         border: 1px solid #ddd;
         padding: 10px;
     }
-    .st-expander > div {
-        margin-top: 10px;
-    }
     .st-expander-header {
         font-weight: bold;
         color: #2980b9;
     }
-    /* General adjustments */
     .stButton>button {
         background-color: #2980b9;
         color: white;
@@ -203,18 +197,35 @@ if st.button("📝 Generate Travel Itinerary"):
         # Collapsible boxes for outputs
         with st.expander("💰 Flight Prices", expanded=False):
             col1, col2 = st.columns(2)
-            with col1:
-                st.subheader("Overview")
-                st.write(flight_prices[:len(flight_prices)//2])  # Display half of the content
-            with col2:
-                st.subheader("More Details")
-                st.write(flight_prices[len(flight_prices)//2:])  # Display the other half
+            paragraphs = flight_prices.split("\n\n")  # Split by paragraphs
+            for i, paragraph in enumerate(paragraphs):
+                if i % 2 == 0:
+                    with col1:
+                        st.write(paragraph)
+                else:
+                    with col2:
+                        st.write(paragraph)
         
         with st.expander("📋 Itinerary", expanded=False):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.subheader("Day-by-Day Plan")
-                st.write(itinerary[:len(itinerary)//2])  # Display half of the itinerary
-            with col2:
-                st.subheader("Additional Info")
-                st.write(itinerary[len(itinerary)//2:])  # Display the other half
+            st.markdown("### Trip Itinerary")
+            st.write("**Travel Dates:** December 9 - December 15, 2024")
+            st.write("**Exchange Rate:** 1 USD = 83 INR")
+            
+            col1, col2, col3 = st.columns(3)
+            day_wise = itinerary.split("\n\n")  # Ensure paragraphs align
+            for i, paragraph in enumerate(day_wise):
+                if i % 3 == 0:
+                    with col1:
+                        st.write(paragraph)
+                elif i % 3 == 1:
+                    with col2:
+                        st.write(paragraph)
+                else:
+                    with col3:
+                        st.write(paragraph)
+
+            # Summary below columns
+            st.markdown("### Summary of Expenses")
+            st.write("**Total Estimated Expense:** $3,500")
+            st.markdown("### Final Thoughts")
+            st.write("Enjoy your trip and immerse yourself in the culture!")
