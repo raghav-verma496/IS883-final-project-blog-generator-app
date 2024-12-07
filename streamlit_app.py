@@ -1,3 +1,5 @@
+#Streamlit App Link: https://is883-final-project-blog-generator-app.streamlit.app/ 
+
 #os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
 #os.environ["SERPER_API_KEY"] = st.secrets["SerperAPIKey"]
 
