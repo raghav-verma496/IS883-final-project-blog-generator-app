@@ -10,6 +10,7 @@
 #my_secret_key = st.secrets['IS883-OpenAIKey-RV']
 #openai.api_key = my_secret_key
 
+
 import os
 import urllib.parse
 from io import BytesIO
@@ -21,6 +22,7 @@ from langchain_community.utilities import GoogleSerperAPIWrapper
 import openai
 import streamlit as st
 import time
+
 
 # Load API keys
 os.environ["OPENAI_API_KEY"] = st.secrets['IS883-OpenAIKey-RV']
