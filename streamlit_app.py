@@ -261,3 +261,135 @@ if st.session_state.itinerary and st.session_state.flight_prices:
         file_name="travel_itinerary.pdf",
         mime="application/pdf",
     )
+
+import time
+from rouge_score import rouge_scorer
+from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
+
+
+# Add a section at the bottom for evaluation metrics
+if "itinerary" in st.session_state and st.session_state.itinerary:
+    st.markdown("### Your itinerary has been generated successfully!")
+
+    # Expander for Evaluation Metrics
+    with st.expander("Evaluation Metrics", expanded=False):
+        # Initialize variables to store metrics
+        execution_times = {}
+
+        # Measure the execution time for fetching flight prices
+        start_time = time.time()
+        fetch_flight_prices(origin, destination, travel_dates[0].strftime("%Y-%m-%d"))
+        end_time = time.time()
+        execution_times["Fetch Flight Prices"] = end_time - start_time
+
+        # Measure the execution time for generating an itinerary
+        start_time = time.time()
+        generate_itinerary_with_chatgpt(origin, destination, travel_dates, interests, budget)
+        end_time = time.time()
+        execution_times["Generate Itinerary"] = end_time - start_time
+
+        # Display Execution Times
+        st.markdown("#### Execution Times (in seconds)")
+        for task, exec_time in execution_times.items():
+            st.write(f"- **{task}**: {exec_time:.2f} seconds")
+
+        # Reference Itinerary for Evaluation (manually curated or from trusted sources)
+        reference_itinerary = """
+Trip Itinerary: Boston to Sydney
+Travel Dates: December 29, 2024 - January 3, 2025
+Budget Level: Low (up to $5,000)
+
+Day 1: December 29, 2024 - Departure from Boston
+- Flight:
+  - Depart from Boston (BOS) to Sydney (SYD).
+  - Estimated Cost: $1,200 USD (around 1,800 AUD).
+- Total Expense Day 1: $1,200 USD (1,800 AUD).
+
+Day 2: December 30, 2024 - Arrival in Sydney
+- Activity 1: Explore the Sydney Opera House.
+  - Description: Iconic architectural marvel and cultural venue.
+  - Cost: Free self-guided tour (booked in advance). Guided tours cost around 150 AUD.
+  - Expense in Local Currency: 0 AUD (self-guided).
+  - Expense in USD: 0 USD.
+- Activity 2: Visit the Royal Botanic Garden.
+  - Description: Beautiful gardens with stunning views of the Sydney Harbour and the Opera House.
+  - Cost: Free entry.
+  - Expense in Local Currency: 0 AUD.
+  - Expense in USD: 0 USD.
+
+Day 3: December 31, 2024 - Sydney
+- Activity 3: Australian Museum.
+  - Description: Australia's oldest museum featuring natural history and cultural artifacts.
+  - Cost: Ticket price is 15 AUD.
+  - Expense in Local Currency: 15 AUD.
+  - Expense in USD: 10 USD.
+- Activity 4: Explore The Rocks.
+  - Description: Historic area with quaint houses, shops, and a market on weekends.
+  - Cost: Free to explore.
+  - Expense in Local Currency: 0 AUD.
+  - Expense in USD: 0 USD.
+
+Day 4: January 1, 2025 - Sydney
+- Activity 5: Art Gallery of New South Wales.
+  - Description: A major public gallery featuring Australian and international art.
+  - Cost: Free entry to the main galleries; special exhibitions may charge around 20 AUD.
+  - Expense in Local Currency: 0 AUD (main galleries).
+  - Expense in USD: 0 USD.
+
+Day 5: January 2, 2025 - Sydney
+- Activity 6: Visit Taronga Zoo.
+  - Description: A well-known zoo with a focus on conservation and education.
+  - Cost: Ticket price is 49 AUD.
+  - Expense in Local Currency: 49 AUD.
+  - Expense in USD: 32 USD.
+
+Day 6: January 3, 2025 - Departure from Sydney
+- Flight:
+  - Depart from Sydney (SYD) back to Boston (BOS).
+  - Estimated Cost: Included in the round-trip airfare.
+
+Summary of Expenses:
+- Flight (Boston to Sydney): $1,200 USD (1,800 AUD).
+- Australian Museum: $10 USD (15 AUD).
+- Taronga Zoo: $32 USD (49 AUD).
+- Total Expense: $1,242 USD (1,864 AUD).
+- Remaining Budget: $5,000 USD - $1,242 USD = $3,758 USD.
+
+Additional Tips:
+- Access to transportation such as public transport (Opal card) will cost an additional 50-100 AUD for the duration of your stay.
+- Enjoy local eateries for affordable meals; budget around 20-35 AUD per meal.
+"""
+
+        # Generate Itinerary for Evaluation (Replace with the output from the app)
+        generated_itinerary = st.session_state.itinerary
+
+        # ROUGE Evaluation
+        def evaluate_rouge(reference, generated):
+            scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+            scores = scorer.score(reference, generated)
+            return scores
+    
+        # BLEU Evaluation
+        def evaluate_bleu(reference, generated):
+            # Tokenize and split sentences into lists of words
+            reference_sentences = [reference.split()]  # BLEU expects a list of references
+            generated_sentences = generated.split()  # Tokenize generated text
+            smoothing = SmoothingFunction().method1  # Add smoothing to avoid zero scores
+            bleu_score = sentence_bleu(reference_sentences, generated_sentences, smoothing_function=smoothing)
+            return bleu_score
+
+        # Perform Evaluations
+        rouge_scores = evaluate_rouge(reference_itinerary, generated_itinerary)
+        bleu_score = evaluate_bleu(reference_itinerary, generated_itinerary)
+
+        # Display ROUGE Scores
+        st.markdown("#### ROUGE Scores")
+        st.write(f"ROUGE-1 (Unigram Overlap): {rouge_scores['rouge1'].fmeasure:.4f}")
+        st.write(f"ROUGE-2 (Bigram Overlap): {rouge_scores['rouge2'].fmeasure:.4f}")
+        st.write(f"ROUGE-L (Longest Common Subsequence): {rouge_scores['rougeL'].fmeasure:.4f}")
+    
+        # Display BLEU Score
+        st.markdown("#### BLEU Score")
+        st.write(f"BLEU Score: {bleu_score:.4f}")
+else:
+    st.info("Please generate an itinerary first to view evaluation metrics.")
